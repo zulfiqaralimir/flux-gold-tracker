@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FLUX - Gold Trend Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <!-- Using cdnjs instead of jsdelivr - more reliable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -392,26 +393,44 @@
     </div>
 
     <script>
-        console.log('Script loaded');
-        
-        // Initialize everything when both DOM and Chart.js are ready
         (function() {
-            function initApp() {
-                console.log('Initializing app...');
-                const ctx = document.getElementById('priceChart');
+            'use strict';
+            
+            console.log('🚀 App starting...');
+            
+            // Wait for everything to load
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            function init() {
+                attempts++;
+                console.log(`⏳ Attempt ${attempts}/${maxAttempts}`);
                 
-                if (!ctx) {
-                    console.error('Canvas not found');
-                    return;
-                }
-
+                // Check if Chart.js loaded
                 if (typeof Chart === 'undefined') {
-                    console.error('Chart.js not loaded');
-                    setTimeout(initApp, 100);
+                    if (attempts < maxAttempts) {
+                        console.warn('⚠️ Chart.js not loaded yet, retrying...');
+                        setTimeout(init, 100);
+                        return;
+                    } else {
+                        console.error('❌ Chart.js failed to load after ' + maxAttempts + ' attempts');
+                        document.getElementById('priceChart').parentElement.innerHTML = 
+                            '<p style="color: #FFD700; text-align: center; padding: 50px;">Chart library could not be loaded. Please refresh the page.</p>';
+                        return;
+                    }
+                }
+                
+                console.log('✅ Chart.js loaded successfully!');
+                
+                const ctx = document.getElementById('priceChart');
+                if (!ctx) {
+                    console.error('❌ Canvas element not found');
                     return;
                 }
                 
-                // Data generators
+                console.log('✅ Canvas found');
+                
+                // Data generation functions
                 function generateLabels(period) {
                     const labels = [];
                     if (period === '24h') {
@@ -447,101 +466,92 @@
                     '1y': { points: 11, min: 3200, max: 4700 }
                 };
                 
-                const priceChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: generateLabels('24h'),
-                        datasets: [{
-                            label: 'Gold Price (USD/oz)',
-                            data: generateData(24, 4560, 4700),
-                            borderColor: '#FFD700',
-                            backgroundColor: 'rgba(255, 215, 0, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHoverRadius: 6,
-                            pointHoverBackgroundColor: '#FFD700',
-                            pointHoverBorderColor: '#FFFFFF',
-                            pointHoverBorderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            intersect: false,
-                            mode: 'index'
-                        },
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(26, 26, 26, 0.95)',
-                                titleColor: '#FFD700',
-                                bodyColor: '#FFFFFF',
+                // Create chart
+                try {
+                    const priceChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: generateLabels('24h'),
+                            datasets: [{
+                                label: 'Gold Price (USD/oz)',
+                                data: generateData(24, 4560, 4700),
                                 borderColor: '#FFD700',
-                                borderWidth: 2,
-                                padding: 12,
-                                displayColors: false,
-                                callbacks: {
-                                    label: function(context) {
-                                        return '$' + parseFloat(context.parsed.y).toFixed(2);
-                                    }
-                                }
-                            }
+                                backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointHoverBackgroundColor: '#FFD700',
+                                pointHoverBorderColor: '#FFFFFF',
+                                pointHoverBorderWidth: 2
+                            }]
                         },
-                        scales: {
-                            x: {
-                                grid: {
-                                    color: 'rgba(255, 215, 0, 0.1)',
-                                    drawBorder: false
-                                },
-                                ticks: {
-                                    color: '#A0A0A0',
-                                    font: {
-                                        family: 'Space Mono'
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: 'rgba(26, 26, 26, 0.95)',
+                                    titleColor: '#FFD700',
+                                    bodyColor: '#FFFFFF',
+                                    borderColor: '#FFD700',
+                                    borderWidth: 2,
+                                    padding: 12,
+                                    displayColors: false,
+                                    callbacks: {
+                                        label: function(context) {
+                                            return '$' + parseFloat(context.parsed.y).toFixed(2);
+                                        }
                                     }
                                 }
                             },
-                            y: {
-                                grid: {
-                                    color: 'rgba(255, 215, 0, 0.1)',
-                                    drawBorder: false
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255, 215, 0, 0.1)', drawBorder: false },
+                                    ticks: { color: '#A0A0A0', font: { family: 'Space Mono' } }
                                 },
-                                ticks: {
-                                    color: '#A0A0A0',
-                                    font: {
-                                        family: 'Space Mono'
-                                    },
-                                    callback: function(value) {
-                                        return '$' + value.toFixed(0);
+                                y: {
+                                    grid: { color: 'rgba(255, 215, 0, 0.1)', drawBorder: false },
+                                    ticks: {
+                                        color: '#A0A0A0',
+                                        font: { family: 'Space Mono' },
+                                        callback: function(value) { return '$' + value.toFixed(0); }
                                     }
                                 }
                             }
                         }
-                    }
-                });
-
-                console.log('Chart initialized');
-
-                // Time period buttons
-                document.querySelectorAll('.time-btn').forEach(button => {
-                    button.addEventListener('click', function() {
-                        document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
-                        this.classList.add('active');
-                        
-                        const period = this.dataset.period;
-                        const config = dataConfigs[period];
-                        
-                        priceChart.data.labels = generateLabels(period);
-                        priceChart.data.datasets[0].data = generateData(config.points, config.min, config.max);
-                        priceChart.update();
                     });
-                });
-
-                // Price updates function
+                    
+                    console.log('✅ Chart created successfully!');
+                    
+                    // Time period buttons
+                    document.querySelectorAll('.time-btn').forEach(button => {
+                        button.addEventListener('click', function() {
+                            document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+                            this.classList.add('active');
+                            
+                            const period = this.dataset.period;
+                            const config = dataConfigs[period];
+                            
+                            priceChart.data.labels = generateLabels(period);
+                            priceChart.data.datasets[0].data = generateData(config.points, config.min, config.max);
+                            priceChart.update();
+                            
+                            console.log('📊 Chart updated to ' + period);
+                        });
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Error creating chart:', error);
+                }
+                
+                // Price update function
                 function updateLivePrice() {
                     try {
                         const currentPriceEl = document.getElementById('currentPrice');
@@ -549,7 +559,7 @@
                         const lastUpdatedEl = document.getElementById('lastUpdated');
                         
                         if (!currentPriceEl || !priceChangeEl || !lastUpdatedEl) {
-                            console.error('Price elements not found');
+                            console.error('❌ Price elements not found');
                             return;
                         }
                         
@@ -567,28 +577,26 @@
                         priceChangeEl.className = 'price-change ' + (priceChange >= 0 ? 'positive' : 'negative');
                         lastUpdatedEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
                         
-                        console.log('Price updated: $' + newPrice.toFixed(2));
+                        console.log('💰 Price updated: $' + newPrice.toFixed(2));
                     } catch (error) {
-                        console.error('Error updating price:', error);
+                        console.error('❌ Error updating price:', error);
                     }
                 }
-
-                // Start price updates
-                console.log('Starting price updates...');
-                updateLivePrice(); // Initial update
+                
+                // Start updates
+                console.log('🔄 Starting price updates...');
+                updateLivePrice();
                 setInterval(updateLivePrice, 3000);
-                console.log('Price update interval started');
+                console.log('✅ App fully initialized!');
             }
-
-            // Wait for DOM to be ready
+            
+            // Start initialization
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initApp);
+                document.addEventListener('DOMContentLoaded', init);
             } else {
-                initApp();
+                init();
             }
         })();
     </script>
 </body>
 </html>
- 
- 
