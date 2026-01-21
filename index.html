@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FLUX - Gold Trend Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -33,7 +32,6 @@
             overflow-x: hidden;
         }
 
-        /* Animated background gradient */
         body::before {
             content: '';
             position: fixed;
@@ -62,7 +60,6 @@
             z-index: 1;
         }
 
-        /* Header */
         header {
             text-align: center;
             padding: 60px 20px 40px;
@@ -92,7 +89,6 @@
             background-clip: text;
             letter-spacing: 8px;
             animation: shimmer 3s ease-in-out infinite;
-            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
         }
 
         @keyframes shimmer {
@@ -108,7 +104,6 @@
             text-transform: uppercase;
         }
 
-        /* Live Price Section */
         .live-price-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -125,7 +120,6 @@
         .price-card {
             background: var(--bg-card);
             border: 2px solid var(--gold-dark);
-            border-radius: 0;
             padding: 30px;
             position: relative;
             overflow: hidden;
@@ -193,7 +187,6 @@
             margin-top: 15px;
         }
 
-        /* Chart Section */
         .chart-section {
             background: var(--bg-card);
             border: 2px solid var(--gold-dark);
@@ -266,7 +259,6 @@
             height: 400px;
         }
 
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -301,7 +293,6 @@
             margin-top: 8px;
         }
 
-        /* Footer */
         footer {
             text-align: center;
             padding: 40px 20px;
@@ -311,23 +302,6 @@
             font-size: 0.8rem;
         }
 
-        /* Loading Animation */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid var(--gold-dark);
-            border-top: 3px solid var(--gold-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
             .logo {
                 font-size: 2.5rem;
@@ -356,7 +330,6 @@
             <p class="tagline">Gold Trend Tracker</p>
         </header>
 
-        <!-- Live Price Cards -->
         <div class="live-price-section">
             <div class="price-card">
                 <div class="price-label">Current Gold Price</div>
@@ -378,7 +351,6 @@
             </div>
         </div>
 
-        <!-- Chart Section -->
         <div class="chart-section">
             <div class="chart-header">
                 <h2 class="chart-title">Price Chart</h2>
@@ -394,7 +366,6 @@
             </div>
         </div>
 
-        <!-- Statistics Grid -->
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-label">Market Cap</div>
@@ -421,50 +392,55 @@
     </div>
 
     <script>
-        // Wait for Chart.js to load
-        window.addEventListener('load', function() {
+        // Wait for DOM to load
+        document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('priceChart');
-            if (!ctx) {
-                console.error('Canvas element not found');
-                return;
+            
+            // Data generators
+            function generateLabels(period) {
+                const labels = [];
+                if (period === '24h') {
+                    for (let i = 0; i <= 24; i++) labels.push(i + 'h');
+                } else if (period === '7d') {
+                    for (let i = 0; i <= 7; i++) labels.push('Day ' + i);
+                } else if (period === '1m') {
+                    for (let i = 0; i <= 30; i++) labels.push('Day ' + i);
+                } else {
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    labels.push(...months);
+                }
+                return labels;
             }
 
-            // Data generators for different time periods
-            const dataGenerators = {
-                '24h': () => generateData(24, 4560, 4700, 1),
-                '7d': () => generateData(168, 4200, 4700, 4),
-                '1m': () => generateData(720, 3800, 4700, 12),
-                '1y': () => generateData(365, 3200, 4700, 24)
-            };
-
-            function generateData(points, min, max, step) {
+            function generateData(points, min, max) {
                 const data = [];
                 let currentPrice = 4687.50;
-                const now = Date.now();
                 
-                for (let i = points; i >= 0; i--) {
-                    const timestamp = now - (i * step * 3600000);
+                for (let i = 0; i <= points; i++) {
                     const volatility = (max - min) * 0.02;
                     const change = (Math.random() - 0.5) * volatility;
                     currentPrice = Math.max(min, Math.min(max, currentPrice + change));
-                    
-                    data.push({
-                        x: timestamp,
-                        y: parseFloat(currentPrice.toFixed(2))
-                    });
+                    data.push(parseFloat(currentPrice.toFixed(2)));
                 }
                 return data;
             }
 
-            // Initial chart data
-            let chartData = dataGenerators['24h']();
+            const dataConfigs = {
+                '24h': { points: 24, min: 4560, max: 4700 },
+                '7d': { points: 7, min: 4200, max: 4700 },
+                '1m': { points: 30, min: 3800, max: 4700 },
+                '1y': { points: 11, min: 3200, max: 4700 }
+            };
 
+            let currentPeriod = '24h';
+            
             const priceChart = new Chart(ctx, {
                 type: 'line',
                 data: {
+                    labels: generateLabels('24h'),
                     datasets: [{
                         label: 'Gold Price (USD/oz)',
-                        data: chartData,
+                        data: generateData(24, 4560, 4700),
                         borderColor: '#FFD700',
                         backgroundColor: 'rgba(255, 215, 0, 0.1)',
                         borderWidth: 3,
@@ -497,9 +473,6 @@
                             padding: 12,
                             displayColors: false,
                             callbacks: {
-                                title: function(context) {
-                                    return new Date(context[0].parsed.x).toLocaleString();
-                                },
                                 label: function(context) {
                                     return '$' + parseFloat(context.parsed.y).toFixed(2);
                                 }
@@ -508,10 +481,6 @@
                     },
                     scales: {
                         x: {
-                            type: 'time',
-                            time: {
-                                unit: 'hour'
-                            },
                             grid: {
                                 color: 'rgba(255, 215, 0, 0.1)',
                                 drawBorder: false
@@ -545,48 +514,32 @@
             // Time period buttons
             document.querySelectorAll('.time-btn').forEach(button => {
                 button.addEventListener('click', function() {
-                    // Remove active class from all buttons
                     document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
-                    // Add active class to clicked button
                     this.classList.add('active');
                     
-                    // Update chart data
                     const period = this.dataset.period;
-                    chartData = dataGenerators[period]();
-                    priceChart.data.datasets[0].data = chartData;
+                    const config = dataConfigs[period];
                     
-                    // Update time unit for x-axis
-                    if (period === '24h') {
-                        priceChart.options.scales.x.time.unit = 'hour';
-                    } else if (period === '7d') {
-                        priceChart.options.scales.x.time.unit = 'day';
-                    } else if (period === '1m') {
-                        priceChart.options.scales.x.time.unit = 'day';
-                    } else if (period === '1y') {
-                        priceChart.options.scales.x.time.unit = 'month';
-                    }
-                    
+                    priceChart.data.labels = generateLabels(period);
+                    priceChart.data.datasets[0].data = generateData(config.points, config.min, config.max);
                     priceChart.update();
                 });
             });
 
-            // Simulate real-time price updates
+            // Price updates
             function updateLivePrice() {
                 const currentPriceEl = document.getElementById('currentPrice');
                 const priceChangeEl = document.getElementById('priceChange');
                 const lastUpdatedEl = document.getElementById('lastUpdated');
                 
-                // Random price fluctuation
                 const currentPrice = parseFloat(currentPriceEl.textContent.replace('$', '').replace(',', ''));
                 const change = (Math.random() - 0.5) * 10;
                 const newPrice = currentPrice + change;
                 
-                // Calculate percentage change
                 const basePrice = 4560.20;
                 const priceChange = newPrice - basePrice;
                 const percentChange = ((priceChange / basePrice) * 100).toFixed(2);
                 
-                // Update UI
                 currentPriceEl.textContent = '$' + newPrice.toFixed(2);
                 priceChangeEl.textContent = (priceChange >= 0 ? '+' : '') + '$' + Math.abs(priceChange).toFixed(2) + 
                                             ' (' + (priceChange >= 0 ? '+' : '') + percentChange + '%)';
@@ -594,10 +547,7 @@
                 lastUpdatedEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
             }
 
-            // Update price every 3 seconds
             setInterval(updateLivePrice, 3000);
-
-            // Initial update
             updateLivePrice();
         });
     </script>
