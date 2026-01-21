@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FLUX - Gold Trend Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -420,179 +421,183 @@
     </div>
 
     <script>
-        // Chart.js Configuration
-        const ctx = document.getElementById('priceChart').getContext('2d');
-        
-        // Data generators for different time periods
-        const dataGenerators = {
-            '24h': () => generateData(24, 4560, 4700, 1),
-            '7d': () => generateData(168, 4200, 4700, 4),
-            '1m': () => generateData(720, 3800, 4700, 12),
-            '1y': () => generateData(365, 3200, 4700, 24)
-        };
-
-        function generateData(points, min, max, step) {
-            const data = [];
-            let currentPrice = 4687.50;
-            const now = Date.now();
-            
-            for (let i = points; i >= 0; i--) {
-                const timestamp = now - (i * step * 3600000);
-                const volatility = (max - min) * 0.02;
-                const change = (Math.random() - 0.5) * volatility;
-                currentPrice = Math.max(min, Math.min(max, currentPrice + change));
-                
-                data.push({
-                    x: timestamp,
-                    y: currentPrice.toFixed(2)
-                });
+        // Wait for Chart.js to load
+        window.addEventListener('load', function() {
+            const ctx = document.getElementById('priceChart');
+            if (!ctx) {
+                console.error('Canvas element not found');
+                return;
             }
-            return data;
-        }
 
-        // Initial chart data
-        let chartData = dataGenerators['24h']();
+            // Data generators for different time periods
+            const dataGenerators = {
+                '24h': () => generateData(24, 4560, 4700, 1),
+                '7d': () => generateData(168, 4200, 4700, 4),
+                '1m': () => generateData(720, 3800, 4700, 12),
+                '1y': () => generateData(365, 3200, 4700, 24)
+            };
 
-        const priceChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                datasets: [{
-                    label: 'Gold Price (USD/oz)',
-                    data: chartData,
-                    borderColor: '#FFD700',
-                    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: '#FFD700',
-                    pointHoverBorderColor: '#FFFFFF',
-                    pointHoverBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(26, 26, 26, 0.95)',
-                        titleColor: '#FFD700',
-                        bodyColor: '#FFFFFF',
+            function generateData(points, min, max, step) {
+                const data = [];
+                let currentPrice = 4687.50;
+                const now = Date.now();
+                
+                for (let i = points; i >= 0; i--) {
+                    const timestamp = now - (i * step * 3600000);
+                    const volatility = (max - min) * 0.02;
+                    const change = (Math.random() - 0.5) * volatility;
+                    currentPrice = Math.max(min, Math.min(max, currentPrice + change));
+                    
+                    data.push({
+                        x: timestamp,
+                        y: parseFloat(currentPrice.toFixed(2))
+                    });
+                }
+                return data;
+            }
+
+            // Initial chart data
+            let chartData = dataGenerators['24h']();
+
+            const priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Gold Price (USD/oz)',
+                        data: chartData,
                         borderColor: '#FFD700',
-                        borderWidth: 2,
-                        padding: 12,
-                        displayColors: false,
-                        callbacks: {
-                            title: function(context) {
-                                return new Date(context[0].parsed.x).toLocaleString();
-                            },
-                            label: function(context) {
-                                return '$' + parseFloat(context.parsed.y).toFixed(2);
-                            }
-                        }
-                    }
+                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#FFD700',
+                        pointHoverBorderColor: '#FFFFFF',
+                        pointHoverBorderWidth: 2
+                    }]
                 },
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: {
-                            unit: 'hour'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
                         },
-                        grid: {
-                            color: 'rgba(255, 215, 0, 0.1)',
-                            drawBorder: false
-                        },
-                        ticks: {
-                            color: '#A0A0A0',
-                            font: {
-                                family: 'Space Mono'
+                        tooltip: {
+                            backgroundColor: 'rgba(26, 26, 26, 0.95)',
+                            titleColor: '#FFD700',
+                            bodyColor: '#FFFFFF',
+                            borderColor: '#FFD700',
+                            borderWidth: 2,
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                title: function(context) {
+                                    return new Date(context[0].parsed.x).toLocaleString();
+                                },
+                                label: function(context) {
+                                    return '$' + parseFloat(context.parsed.y).toFixed(2);
+                                }
                             }
                         }
                     },
-                    y: {
-                        grid: {
-                            color: 'rgba(255, 215, 0, 0.1)',
-                            drawBorder: false
-                        },
-                        ticks: {
-                            color: '#A0A0A0',
-                            font: {
-                                family: 'Space Mono'
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'hour'
                             },
-                            callback: function(value) {
-                                return '$' + value.toFixed(0);
+                            grid: {
+                                color: 'rgba(255, 215, 0, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#A0A0A0',
+                                font: {
+                                    family: 'Space Mono'
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 215, 0, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#A0A0A0',
+                                font: {
+                                    family: 'Space Mono'
+                                },
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
-
-        // Time period buttons
-        document.querySelectorAll('.time-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                // Remove active class from all buttons
-                document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
-                // Add active class to clicked button
-                this.classList.add('active');
-                
-                // Update chart data
-                const period = this.dataset.period;
-                chartData = dataGenerators[period]();
-                priceChart.data.datasets[0].data = chartData;
-                
-                // Update time unit for x-axis
-                if (period === '24h') {
-                    priceChart.options.scales.x.time.unit = 'hour';
-                } else if (period === '7d') {
-                    priceChart.options.scales.x.time.unit = 'day';
-                } else if (period === '1m') {
-                    priceChart.options.scales.x.time.unit = 'day';
-                } else if (period === '1y') {
-                    priceChart.options.scales.x.time.unit = 'month';
-                }
-                
-                priceChart.update();
             });
-        });
 
-        // Simulate real-time price updates
-        function updateLivePrice() {
-            const currentPriceEl = document.getElementById('currentPrice');
-            const priceChangeEl = document.getElementById('priceChange');
-            const lastUpdatedEl = document.getElementById('lastUpdated');
-            
-            // Random price fluctuation
-            const currentPrice = parseFloat(currentPriceEl.textContent.replace('$', '').replace(',', ''));
-            const change = (Math.random() - 0.5) * 10;
-            const newPrice = currentPrice + change;
-            
-            // Calculate percentage change
-            const basePrice = 4560.20;
-            const priceChange = newPrice - basePrice;
-            const percentChange = ((priceChange / basePrice) * 100).toFixed(2);
-            
-            // Update UI
-            currentPriceEl.textContent = '$' + newPrice.toFixed(2);
-            priceChangeEl.textContent = (priceChange >= 0 ? '+' : '') + '$' + Math.abs(priceChange).toFixed(2) + 
-                                        ' (' + (priceChange >= 0 ? '+' : '') + percentChange + '%)';
-            priceChangeEl.className = 'price-change ' + (priceChange >= 0 ? 'positive' : 'negative');
-            lastUpdatedEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
-        }
+            // Time period buttons
+            document.querySelectorAll('.time-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Update chart data
+                    const period = this.dataset.period;
+                    chartData = dataGenerators[period]();
+                    priceChart.data.datasets[0].data = chartData;
+                    
+                    // Update time unit for x-axis
+                    if (period === '24h') {
+                        priceChart.options.scales.x.time.unit = 'hour';
+                    } else if (period === '7d') {
+                        priceChart.options.scales.x.time.unit = 'day';
+                    } else if (period === '1m') {
+                        priceChart.options.scales.x.time.unit = 'day';
+                    } else if (period === '1y') {
+                        priceChart.options.scales.x.time.unit = 'month';
+                    }
+                    
+                    priceChart.update();
+                });
+            });
 
-        // Update price every 3 seconds
-        setInterval(updateLivePrice, 3000);
+            // Simulate real-time price updates
+            function updateLivePrice() {
+                const currentPriceEl = document.getElementById('currentPrice');
+                const priceChangeEl = document.getElementById('priceChange');
+                const lastUpdatedEl = document.getElementById('lastUpdated');
+                
+                // Random price fluctuation
+                const currentPrice = parseFloat(currentPriceEl.textContent.replace('$', '').replace(',', ''));
+                const change = (Math.random() - 0.5) * 10;
+                const newPrice = currentPrice + change;
+                
+                // Calculate percentage change
+                const basePrice = 4560.20;
+                const priceChange = newPrice - basePrice;
+                const percentChange = ((priceChange / basePrice) * 100).toFixed(2);
+                
+                // Update UI
+                currentPriceEl.textContent = '$' + newPrice.toFixed(2);
+                priceChangeEl.textContent = (priceChange >= 0 ? '+' : '') + '$' + Math.abs(priceChange).toFixed(2) + 
+                                            ' (' + (priceChange >= 0 ? '+' : '') + percentChange + '%)';
+                priceChangeEl.className = 'price-change ' + (priceChange >= 0 ? 'positive' : 'negative');
+                lastUpdatedEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
+            }
 
-        // Initial animation on load
-        window.addEventListener('load', () => {
+            // Update price every 3 seconds
+            setInterval(updateLivePrice, 3000);
+
+            // Initial update
             updateLivePrice();
         });
     </script>
