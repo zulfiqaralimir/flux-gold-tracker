@@ -549,12 +549,8 @@
             // API Configuration
             const API_KEY = 'YBMSEYTYRUYHW4ISHJPF483ISHJPF';
             const API_URL = 'https://api.metals.dev/v1/latest';
-            const UPDATE_INTERVAL = 60000; // 60 seconds (to respect API limits)
-            
-            // NewsAPI Configuration
-            const NEWS_API_KEY = '418c3e435fe54907bd6aa6996c998b82';
-            const NEWS_API_URL = 'https://newsapi.org/v2/everything';
-            const NEWS_UPDATE_INTERVAL = 3600000; // 1 hour (to respect API limits)
+            const UPDATE_INTERVAL = 60000; // 60 seconds
+            const NEWS_UPDATE_INTERVAL = 3600000; // 1 hour
             
             // Store price history
             let priceHistory = {
@@ -743,32 +739,29 @@
                 priceChart.update('none'); // Update without animation for smooth updates
             }
             
-            // Fetch and display gold news
+            // Fetch and display gold news (via serverless function)
             async function fetchGoldNews() {
                 try {
                     console.log('📰 Fetching gold market news...');
                     
-                    const query = 'gold market OR gold price';
-                    const sortBy = 'publishedAt';
-                    const pageSize = 6;
-                    
-                    const response = await fetch(`${NEWS_API_URL}?q=${encodeURIComponent(query)}&sortBy=${sortBy}&pageSize=${pageSize}&language=en&apiKey=${NEWS_API_KEY}`);
+                    // Call our serverless function instead of NewsAPI directly
+                    const response = await fetch('/api/news');
                     
                     if (!response.ok) {
-                        throw new Error(`News API Error: ${response.status}`);
+                        throw new Error(`Server Error: ${response.status}`);
                     }
                     
                     const data = await response.json();
                     
-                    if (data.status === 'ok' && data.articles) {
+                    if (data.success && data.articles) {
                         console.log(`✅ Fetched ${data.articles.length} news articles`);
                         displayNews(data.articles);
                     } else {
-                        throw new Error('No articles found');
+                        throw new Error(data.error || 'No articles found');
                     }
                     
                 } catch (error) {
-                    console.error('❌ News API Error:', error);
+                    console.error('❌ News Error:', error);
                     document.getElementById('newsGrid').innerHTML = '<div class="news-placeholder">Unable to load news. Please try again later.</div>';
                 }
             }
