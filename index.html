@@ -346,6 +346,98 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* News Section */
+        .news-section {
+            background: var(--bg-card);
+            border: 2px solid var(--gold-dark);
+            padding: 40px;
+            margin: 40px 0;
+            animation: fadeIn 1s ease-out 1.2s both;
+        }
+
+        .news-header {
+            margin-bottom: 30px;
+        }
+
+        .news-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold-primary);
+            letter-spacing: 2px;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .news-card {
+            background: rgba(255, 215, 0, 0.05);
+            border-left: 3px solid var(--gold-primary);
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .news-card:hover {
+            background: rgba(255, 215, 0, 0.1);
+            transform: translateX(5px);
+            border-left-width: 5px;
+        }
+
+        .news-source {
+            font-size: 0.7rem;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .news-headline {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .news-description {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .news-time {
+            color: var(--gold-dark);
+        }
+
+        .news-link {
+            color: var(--gold-primary);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .news-link:hover {
+            color: var(--gold-light);
+        }
+
+        .news-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 40px;
+            font-size: 1.1rem;
+        }
+
         @media (max-width: 768px) {
             .logo {
                 font-size: 2.5rem;
@@ -434,6 +526,16 @@
             </div>
         </div>
 
+        <!-- News Feed Section -->
+        <div class="news-section">
+            <div class="news-header">
+                <h2 class="news-title">📰 Latest Gold Market News</h2>
+            </div>
+            <div class="news-grid" id="newsGrid">
+                <div class="news-placeholder">Loading latest news...</div>
+            </div>
+        </div>
+
         <footer>
             <p>FLUX - Gold Analyzer | Real-time Market Data</p>
             <p style="margin-top: 10px; font-size: 0.7rem;">Live Version - Real-time Price Updates</p>
@@ -448,6 +550,11 @@
             const API_KEY = 'YBMSEYTYRUYHW4ISHJPF483ISHJPF';
             const API_URL = 'https://api.metals.dev/v1/latest';
             const UPDATE_INTERVAL = 60000; // 60 seconds (to respect API limits)
+            
+            // NewsAPI Configuration
+            const NEWS_API_KEY = '418c3e435fe54907bd6aa6996c998b82';
+            const NEWS_API_URL = 'https://newsapi.org/v2/everything';
+            const NEWS_UPDATE_INTERVAL = 3600000; // 1 hour (to respect API limits)
             
             // Store price history
             let priceHistory = {
@@ -636,6 +743,99 @@
                 priceChart.update('none'); // Update without animation for smooth updates
             }
             
+            // Fetch and display gold news
+            async function fetchGoldNews() {
+                try {
+                    console.log('📰 Fetching gold market news...');
+                    
+                    const query = 'gold market OR gold price';
+                    const sortBy = 'publishedAt';
+                    const pageSize = 6;
+                    
+                    const response = await fetch(`${NEWS_API_URL}?q=${encodeURIComponent(query)}&sortBy=${sortBy}&pageSize=${pageSize}&language=en&apiKey=${NEWS_API_KEY}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`News API Error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'ok' && data.articles) {
+                        console.log(`✅ Fetched ${data.articles.length} news articles`);
+                        displayNews(data.articles);
+                    } else {
+                        throw new Error('No articles found');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ News API Error:', error);
+                    document.getElementById('newsGrid').innerHTML = '<div class="news-placeholder">Unable to load news. Please try again later.</div>';
+                }
+            }
+            
+            // Display news articles
+            function displayNews(articles) {
+                const newsGrid = document.getElementById('newsGrid');
+                
+                if (!articles || articles.length === 0) {
+                    newsGrid.innerHTML = '<div class="news-placeholder">No news available at the moment.</div>';
+                    return;
+                }
+                
+                newsGrid.innerHTML = '';
+                
+                articles.forEach(article => {
+                    const newsCard = document.createElement('div');
+                    newsCard.className = 'news-card';
+                    newsCard.onclick = () => window.open(article.url, '_blank');
+                    
+                    const publishedTime = new Date(article.publishedAt);
+                    const timeAgo = getTimeAgo(publishedTime);
+                    
+                    // Truncate description if too long
+                    const description = article.description ? 
+                        (article.description.length > 150 ? article.description.substring(0, 150) + '...' : article.description) 
+                        : 'Click to read more...';
+                    
+                    newsCard.innerHTML = `
+                        <div class="news-source">${article.source.name || 'News Source'}</div>
+                        <div class="news-headline">${article.title}</div>
+                        <div class="news-description">${description}</div>
+                        <div class="news-meta">
+                            <span class="news-time">${timeAgo}</span>
+                            <a href="${article.url}" target="_blank" class="news-link" onclick="event.stopPropagation()">Read more →</a>
+                        </div>
+                    `;
+                    
+                    newsGrid.appendChild(newsCard);
+                });
+                
+                console.log('✅ News displayed successfully');
+            }
+            
+            // Calculate time ago
+            function getTimeAgo(date) {
+                const seconds = Math.floor((new Date() - date) / 1000);
+                
+                const intervals = {
+                    year: 31536000,
+                    month: 2592000,
+                    week: 604800,
+                    day: 86400,
+                    hour: 3600,
+                    minute: 60
+                };
+                
+                for (const [name, secondsInInterval] of Object.entries(intervals)) {
+                    const interval = Math.floor(seconds / secondsInInterval);
+                    if (interval >= 1) {
+                        return `${interval} ${name}${interval > 1 ? 's' : ''} ago`;
+                    }
+                }
+                
+                return 'Just now';
+            }
+            
             // Initialize app
             async function init() {
                 console.log('⏳ Initializing FLUX API Version...');
@@ -658,14 +858,19 @@
                 // Fetch initial data
                 await fetchGoldPrices();
                 
+                // Fetch initial news
+                await fetchGoldNews();
+                
                 // Hide loading overlay
                 document.getElementById('loadingOverlay').classList.add('hidden');
                 
-                // Set up auto-refresh (every 60 seconds)
+                // Set up auto-refresh (every 60 seconds for prices, every hour for news)
                 setInterval(fetchGoldPrices, UPDATE_INTERVAL);
+                setInterval(fetchGoldNews, NEWS_UPDATE_INTERVAL);
                 
                 console.log('✅ FLUX API Version fully initialized!');
-                console.log('🔄 Auto-refresh every 60 seconds');
+                console.log('🔄 Price auto-refresh every 60 seconds');
+                console.log('📰 News auto-refresh every hour');
             }
             
             // Start when DOM is ready
