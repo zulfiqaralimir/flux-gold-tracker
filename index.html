@@ -547,8 +547,10 @@
             'use strict';
             
             // API Configuration
-            const API_KEY = 'YBMSEYTYRUYHW4ISHJPF483ISHJPF';
-            const API_URL = 'https://api.metals.dev/v1/latest';
+            // NOTE: In production, use serverless functions for API calls
+            // This prevents exposing API keys in the frontend
+            const METALS_API_URL = '/api/metals'; // Use serverless function
+            const NEWS_API_URL = '/api/news'; // Corrected endpoint
             const UPDATE_INTERVAL = 60000; // 60 seconds
             const NEWS_UPDATE_INTERVAL = 3600000; // 1 hour
             
@@ -570,7 +572,8 @@
                 try {
                     console.log('📡 Fetching live data from Metals.dev API...');
                     
-                    const response = await fetch(`${API_URL}?api_key=${API_KEY}&currency=USD&unit=toz`);
+                    // Call serverless function instead of direct API call
+                    const response = await fetch('/api/metals');
                     
                     if (!response.ok) {
                         throw new Error(`API Error: ${response.status}`);
@@ -578,13 +581,13 @@
                     
                     const data = await response.json();
                     
-                    if (data.status === 'success') {
+                    if (data.success) {
                         console.log('✅ API data received successfully!');
-                        updatePrices(data);
-                        storePriceHistory(data);
-                        return data;
+                        updatePrices(data.data);
+                        storePriceHistory(data.data);
+                        return data.data;
                     } else {
-                        throw new Error('API returned error status');
+                        throw new Error(data.error || 'API returned error status');
                     }
                     
                 } catch (error) {
@@ -744,8 +747,8 @@
                 try {
                     console.log('📰 Fetching gold market news...');
                     
-                    // Call our serverless function instead of NewsAPI directly
-                    const response = await fetch('/api/news');
+                    // Call our serverless function (CORRECTED ENDPOINT)
+                    const response = await fetch(NEWS_API_URL);
                     
                     if (!response.ok) {
                         throw new Error(`Server Error: ${response.status}`);
