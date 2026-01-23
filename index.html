@@ -115,6 +115,128 @@
             letter-spacing: 2px;
         }
 
+        /* Market Heat Alert Banner */
+        .heat-alert-banner {
+            background: var(--bg-card);
+            border: 2px solid var(--gold-dark);
+            padding: 20px 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+            animation: fadeIn 1s ease-out 0.2s both;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .heat-alert-banner:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 215, 0, 0.2);
+        }
+
+        .heat-alert-banner.level-1 {
+            border-left: 6px solid var(--accent-green);
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, var(--bg-card) 100%);
+        }
+
+        .heat-alert-banner.level-2 {
+            border-left: 6px solid #FFA500;
+            background: linear-gradient(90deg, rgba(255, 165, 0, 0.1) 0%, var(--bg-card) 100%);
+        }
+
+        .heat-alert-banner.level-3 {
+            border-left: 6px solid var(--accent-red);
+            background: linear-gradient(90deg, rgba(255, 51, 102, 0.1) 0%, var(--bg-card) 100%);
+        }
+
+        .heat-alert-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .heat-alert-main {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .heat-alert-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+            vertical-align: middle;
+        }
+
+        .heat-alert-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            color: var(--gold-primary);
+            display: inline;
+            vertical-align: middle;
+        }
+
+        .heat-alert-details {
+            display: flex;
+            gap: 30px;
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .heat-value {
+            color: var(--gold-primary);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .heat-gauge-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .heat-gauge {
+            width: 150px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .heat-gauge-fill {
+            height: 100%;
+            transition: width 0.5s ease, background-color 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .heat-gauge-fill.level-1 {
+            background: linear-gradient(90deg, var(--accent-green) 0%, #00CC00 100%);
+        }
+
+        .heat-gauge-fill.level-2 {
+            background: linear-gradient(90deg, #FFA500 0%, #FF8C00 100%);
+        }
+
+        .heat-gauge-fill.level-3 {
+            background: linear-gradient(90deg, var(--accent-red) 0%, #CC0000 100%);
+        }
+
+        .heat-cycles {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--gold-primary);
+        }
+
+        .heat-chart-section {
+            background: var(--bg-card);
+            border: 2px solid var(--gold-dark);
+            padding: 40px;
+            margin: 40px 0;
+            animation: fadeIn 1s ease-out 1.5s both;
+        }
+
         .live-price-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -471,6 +593,31 @@
             <div class="api-badge">🔴 LIVE DATA</div>
         </header>
 
+        <!-- Market Heat Alert Banner -->
+        <div class="heat-alert-banner" id="heatAlertBanner" style="display: none;">
+            <div class="heat-alert-content">
+                <div class="heat-alert-main">
+                    <span class="heat-alert-icon" id="heatAlertIcon">🟢</span>
+                    <h2 class="heat-alert-title" id="heatAlertTitle">Loading Market Heat...</h2>
+                    <div class="heat-alert-details">
+                        <div>
+                            <span style="color: var(--text-secondary);">Current Heat:</span>
+                            <span class="heat-value" id="heatValue">--</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-secondary);">Peak Cycles:</span>
+                            <span class="heat-cycles" id="heatCycles">0/3</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="heat-gauge-container">
+                    <div class="heat-gauge">
+                        <div class="heat-gauge-fill" id="heatGaugeFill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="live-price-section">
             <div class="price-card">
                 <div class="price-label">Current Gold Price</div>
@@ -551,8 +698,10 @@
             // This prevents exposing API keys in the frontend
             const METALS_API_URL = '/api/metals'; // Use serverless function
             const NEWS_API_URL = '/api/news'; // Corrected endpoint
+            const MARKET_HEAT_API_URL = '/api/market-heat'; // Market Heat RSI system
             const UPDATE_INTERVAL = 3600000; // 1 hour (to stay within API limits)
             const NEWS_UPDATE_INTERVAL = 3600000; // 1 hour
+            const HEAT_UPDATE_INTERVAL = 3600000; // 1 hour for Market Heat
             
             // Store price history
             let priceHistory = {
@@ -832,6 +981,64 @@
                 return 'Just now';
             }
             
+            // Fetch and display Market Heat (RSI)
+            async function fetchMarketHeat() {
+                try {
+                    console.log('🔥 Fetching Market Heat data...');
+                    
+                    const response = await fetch(MARKET_HEAT_API_URL);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Server Error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.data) {
+                        console.log(`✅ Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
+                        updateHeatDisplay(data.data);
+                    } else {
+                        throw new Error(data.error || 'Failed to fetch Market Heat');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Market Heat Error:', error);
+                    // Don't show banner if there's an error
+                    document.getElementById('heatAlertBanner').style.display = 'none';
+                }
+            }
+            
+            // Update Market Heat display
+            function updateHeatDisplay(heatData) {
+                const banner = document.getElementById('heatAlertBanner');
+                const icon = document.getElementById('heatAlertIcon');
+                const title = document.getElementById('heatAlertTitle');
+                const heatValue = document.getElementById('heatValue');
+                const heatCycles = document.getElementById('heatCycles');
+                const gaugeFill = document.getElementById('heatGaugeFill');
+                
+                // Update banner visibility and level
+                banner.style.display = 'block';
+                banner.className = 'heat-alert-banner level-' + heatData.heatLevel;
+                
+                // Update icon and title
+                icon.textContent = heatData.alert.icon;
+                title.textContent = heatData.alert.title;
+                
+                // Update heat value
+                heatValue.textContent = heatData.currentHeat.toFixed(1) + '°';
+                
+                // Update cycles
+                heatCycles.textContent = heatData.peakCycles + '/' + heatData.maxCycles;
+                
+                // Update gauge
+                const gaugePercentage = Math.min((heatData.currentHeat / 100) * 100, 100);
+                gaugeFill.style.width = gaugePercentage + '%';
+                gaugeFill.className = 'heat-gauge-fill level-' + heatData.heatLevel;
+                
+                console.log('🔥 Market Heat display updated');
+            }
+            
             // Initialize app
             async function init() {
                 console.log('⏳ Initializing FLUX API Version...');
@@ -857,16 +1064,21 @@
                 // Fetch initial news
                 await fetchGoldNews();
                 
+                // Fetch initial Market Heat data
+                await fetchMarketHeat();
+                
                 // Hide loading overlay
                 document.getElementById('loadingOverlay').classList.add('hidden');
                 
                 // Set up auto-refresh (every 60 seconds for prices, every hour for news)
                 setInterval(fetchGoldPrices, UPDATE_INTERVAL);
                 setInterval(fetchGoldNews, NEWS_UPDATE_INTERVAL);
+                setInterval(fetchMarketHeat, HEAT_UPDATE_INTERVAL);
                 
                 console.log('✅ FLUX API Version fully initialized!');
                 console.log('🔄 Price auto-refresh every 1 hour (to stay within API limits)');
                 console.log('📰 News auto-refresh every hour');
+                console.log('🔥 Market Heat auto-refresh every hour');
             }
             
             // Start when DOM is ready
