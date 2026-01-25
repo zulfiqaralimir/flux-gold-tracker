@@ -237,6 +237,191 @@
             animation: fadeIn 1s ease-out 1.5s both;
         }
 
+        /* Buy/Sell Signal Section */
+        .signal-section {
+            background: var(--bg-card);
+            border: 2px solid var(--gold-dark);
+            padding: 40px;
+            margin: 40px 0;
+            animation: fadeIn 1s ease-out 0.8s both;
+        }
+
+        .signal-header {
+            margin-bottom: 30px;
+        }
+
+        .signal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            color: var(--gold-primary);
+            letter-spacing: 2px;
+        }
+
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .signal-card {
+            background: rgba(255, 215, 0, 0.05);
+            border: 2px solid var(--gold-dark);
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .signal-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.3);
+        }
+
+        .signal-card.entry {
+            border-left: 6px solid var(--accent-green);
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+        }
+
+        .signal-card.exit {
+            border-left: 6px solid var(--accent-red);
+            background: linear-gradient(135deg, rgba(255, 51, 102, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+        }
+
+        .signal-card.hold {
+            border-left: 6px solid var(--text-secondary);
+            background: linear-gradient(135deg, rgba(160, 160, 160, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+        }
+
+        .signal-type {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .signal-icon-large {
+            font-size: 3rem;
+        }
+
+        .signal-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .signal-label.entry {
+            color: var(--accent-green);
+        }
+
+        .signal-label.exit {
+            color: var(--accent-red);
+        }
+
+        .signal-label.hold {
+            color: var(--text-secondary);
+        }
+
+        .signal-details {
+            margin-top: 20px;
+        }
+
+        .signal-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+        }
+
+        .signal-detail-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .signal-detail-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            color: var(--gold-primary);
+            font-weight: 700;
+        }
+
+        .strength-meter {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .strength-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .strength-fill.entry {
+            background: linear-gradient(90deg, var(--accent-green) 0%, #00CC00 100%);
+        }
+
+        .strength-fill.exit {
+            background: linear-gradient(90deg, var(--accent-red) 0%, #CC0000 100%);
+        }
+
+        .strength-fill.hold {
+            background: linear-gradient(90deg, var(--text-secondary) 0%, #808080 100%);
+        }
+
+        .pulse-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        .pulse-icon {
+            font-size: 1.5rem;
+        }
+
+        .confidence-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-primary) 100%);
+            color: var(--bg-dark);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            border-radius: 25px;
+            letter-spacing: 1px;
+        }
+
+        .supporting-indicators {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .supporting-title {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .indicator-item {
+            padding: 8px 0;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
         .live-price-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -613,6 +798,53 @@
                 <div class="heat-gauge-container">
                     <div class="heat-gauge">
                         <div class="heat-gauge-fill" id="heatGaugeFill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buy/Sell Signal Section -->
+        <div class="signal-section" id="signalSection" style="display: none;">
+            <div class="signal-header">
+                <h2 class="signal-title">⚡ Trading Signal Analysis</h2>
+            </div>
+            <div class="signal-grid">
+                <div class="signal-card" id="signalCard">
+                    <div class="signal-type">
+                        <span class="signal-icon-large" id="signalIconLarge">⚪</span>
+                        <div>
+                            <div class="signal-label" id="signalLabel">LOADING...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="signal-details">
+                        <div class="signal-detail-row">
+                            <span class="signal-detail-label">Signal Strength</span>
+                            <span class="signal-detail-value" id="signalStrengthText">--/10</span>
+                        </div>
+                        <div class="strength-meter">
+                            <div class="strength-fill" id="strengthFill" style="width: 0%"></div>
+                        </div>
+                        
+                        <div class="signal-detail-row" style="margin-top: 20px;">
+                            <span class="signal-detail-label">Pulse Speed</span>
+                            <div class="pulse-indicator" id="pulseIndicator">
+                                <span class="pulse-icon" id="pulseIcon">🚶</span>
+                                <span id="pulseSpeed">Steady</span>
+                            </div>
+                        </div>
+                        
+                        <div class="signal-detail-row">
+                            <span class="signal-detail-label">Confidence Level</span>
+                            <span class="confidence-badge" id="confidenceBadge">--%</span>
+                        </div>
+                        
+                        <div class="supporting-indicators">
+                            <div class="supporting-title">Supporting Analysis</div>
+                            <div id="supportingIndicators">
+                                <div class="indicator-item">Loading analysis...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1036,7 +1268,62 @@
                 gaugeFill.style.width = gaugePercentage + '%';
                 gaugeFill.className = 'heat-gauge-fill level-' + heatData.heatLevel;
                 
+                // Update Signal Section if signal data exists
+                if (heatData.signal) {
+                    updateSignalDisplay(heatData.signal);
+                }
+                
                 console.log('🔥 Market Heat display updated');
+            }
+            
+            // Update Buy/Sell Signal display
+            function updateSignalDisplay(signalData) {
+                const signalSection = document.getElementById('signalSection');
+                const signalCard = document.getElementById('signalCard');
+                const signalIconLarge = document.getElementById('signalIconLarge');
+                const signalLabel = document.getElementById('signalLabel');
+                const signalStrengthText = document.getElementById('signalStrengthText');
+                const strengthFill = document.getElementById('strengthFill');
+                const pulseIcon = document.getElementById('pulseIcon');
+                const pulseSpeed = document.getElementById('pulseSpeed');
+                const confidenceBadge = document.getElementById('confidenceBadge');
+                const supportingIndicators = document.getElementById('supportingIndicators');
+                
+                // Show signal section
+                signalSection.style.display = 'block';
+                
+                // Update signal card styling
+                const signalType = signalData.type.toLowerCase();
+                signalCard.className = 'signal-card ' + signalType;
+                
+                // Update signal type
+                signalIconLarge.textContent = signalData.icon;
+                signalLabel.textContent = signalData.type + ' SIGNAL';
+                signalLabel.className = 'signal-label ' + signalType;
+                
+                // Update strength
+                signalStrengthText.textContent = signalData.strength + '/10 (' + signalData.strengthLabel + ')';
+                const strengthPercentage = (signalData.strength / 10) * 100;
+                strengthFill.style.width = strengthPercentage + '%';
+                strengthFill.className = 'strength-fill ' + signalType;
+                
+                // Update pulse speed
+                pulseIcon.textContent = signalData.pulseIcon;
+                pulseSpeed.textContent = signalData.pulseSpeed;
+                
+                // Update confidence
+                confidenceBadge.textContent = signalData.confidence + '%';
+                
+                // Update supporting indicators
+                supportingIndicators.innerHTML = '';
+                signalData.supportingIndicators.forEach(indicator => {
+                    const indicatorDiv = document.createElement('div');
+                    indicatorDiv.className = 'indicator-item';
+                    indicatorDiv.textContent = indicator;
+                    supportingIndicators.appendChild(indicatorDiv);
+                });
+                
+                console.log('⚡ Signal display updated: ' + signalData.type + ' (' + signalData.strength + '/10)');
             }
             
             // Initialize app
