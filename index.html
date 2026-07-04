@@ -151,6 +151,26 @@
             background: linear-gradient(90deg, rgba(255, 51, 102, 0.1) 0%, var(--bg-card) 100%);
         }
 
+        /* Bull/Bear Trap Alert Banner */
+        .trap-alert-banner {
+            background: var(--bg-card);
+            border: 2px solid var(--gold-dark);
+            padding: 20px 30px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            animation: fadeIn 0.5s ease-out both;
+        }
+
+        .trap-alert-banner.bull {
+            border-left: 6px solid var(--accent-red);
+            background: linear-gradient(90deg, rgba(255, 51, 102, 0.12) 0%, var(--bg-card) 100%);
+        }
+
+        .trap-alert-banner.bear {
+            border-left: 6px solid var(--accent-green);
+            background: linear-gradient(90deg, rgba(0, 255, 136, 0.12) 0%, var(--bg-card) 100%);
+        }
+
         .heat-alert-content {
             display: flex;
             justify-content: space-between;
@@ -897,10 +917,22 @@
                     <button class="time-btn" data-range="yearly">Yearly</button>
                 </div>
             </div>
+
+            <div class="trap-alert-banner" id="trapAlertBanner" style="display: none;">
+                <div class="heat-alert-content">
+                    <div class="heat-alert-main">
+                        <span class="heat-alert-icon" id="trapAlertIcon">⚠️</span>
+                        <h2 class="heat-alert-title" id="trapAlertTitle">No Trap Detected</h2>
+                        <div class="heat-alert-details" id="trapAlertDetails"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="time-buttons" id="indicatorButtons" style="margin-bottom: 25px;">
                 <button class="time-btn active" data-indicator="ma">MA (20)</button>
                 <button class="time-btn active" data-indicator="ema">EMA (20)</button>
                 <button class="time-btn" data-indicator="rsi">RSI</button>
+                <button class="time-btn" data-indicator="rsi2">RSI2</button>
                 <button class="time-btn" data-indicator="macd">MACD</button>
             </div>
             <div class="chart-container" style="height: 450px;">
@@ -1416,7 +1448,7 @@
             let rsiChart = null;
             let macdChart = null;
             let currentRange = 'daily';
-            let activeIndicators = { ma: true, ema: true, rsi: false, macd: false };
+            let activeIndicators = { ma: true, ema: true, rsi: false, rsi2: false, macd: false };
 
             // ---------- Indicator math ----------
 
@@ -1510,6 +1542,64 @@
                 return { macdLine, signalLine, histogram };
             }
 
+            // Detects failed breakouts/breakdowns using price action + RSI(2) extremes:
+            // a Bull Trap is a break above recent resistance that closes back below it
+            // while RSI2 is deeply overbought; a Bear Trap is the mirror image at support.
+            function detectTraps(candles, rsi2, lookback = 20) {
+                const traps = [];
+
+                for (let i = lookback; i < candles.length; i++) {
+                    const r2 = rsi2[i];
+                    if (r2 === null || r2 === undefined) continue;
+
+                    const window = candles.slice(i - lookback, i);
+                    const priorHigh = Math.max(...window.map(c => c.high));
+                    const priorLow = Math.min(...window.map(c => c.low));
+                    const c = candles[i];
+
+                    if (c.high > priorHigh && c.close < priorHigh && r2 >= 90) {
+                        traps.push({ index: i, time: c.time, type: 'bull', price: c.high });
+                    } else if (c.low < priorLow && c.close > priorLow && r2 <= 10) {
+                        traps.push({ index: i, time: c.time, type: 'bear', price: c.low });
+                    }
+                }
+
+                return traps;
+            }
+
+            function updateTrapAlert(traps, candles) {
+                const banner = document.getElementById('trapAlertBanner');
+                const icon = document.getElementById('trapAlertIcon');
+                const title = document.getElementById('trapAlertTitle');
+                const details = document.getElementById('trapAlertDetails');
+
+                const recentWindow = 3;
+                const lastIndex = candles.length - 1;
+                const recentTrap = [...traps].reverse().find(t => lastIndex - t.index < recentWindow);
+
+                banner.classList.remove('bull', 'bear');
+
+                if (!recentTrap) {
+                    banner.style.display = 'none';
+                    return;
+                }
+
+                banner.style.display = 'block';
+                banner.classList.add(recentTrap.type);
+
+                if (recentTrap.type === 'bull') {
+                    icon.textContent = '🐂🪤';
+                    title.textContent = 'Bull Trap Warning';
+                    details.textContent = 'False breakout above resistance on ' + recentTrap.time +
+                        ' — price failed to hold above ' + recentTrap.price.toFixed(2) + '. Watch for a reversal lower.';
+                } else {
+                    icon.textContent = '🐻🪤';
+                    title.textContent = 'Bear Trap Warning';
+                    details.textContent = 'False breakdown below support on ' + recentTrap.time +
+                        ' — price failed to hold below ' + recentTrap.price.toFixed(2) + '. Watch for a reversal higher.';
+                }
+            }
+
             // ---------- Data fetching ----------
 
             async function fetchCandles(range) {
@@ -1538,13 +1628,16 @@
             function renderAllCharts(candles) {
                 const times = candles.map(c => c.time);
                 const closes = candles.map(c => c.close);
+                const rsi2 = calcRSI(closes, 2);
+                const traps = detectTraps(candles, rsi2);
 
-                renderCandleChart(candles, times, closes);
+                renderCandleChart(candles, times, closes, traps);
                 renderRSIChart(times, closes);
                 renderMACDChart(times, closes);
+                updateTrapAlert(traps, candles);
             }
 
-            function renderCandleChart(candles, times, closes) {
+            function renderCandleChart(candles, times, closes, traps) {
                 const ctx = document.getElementById('candleChart');
                 if (typeof Chart === 'undefined' || !Chart.registry.getController('candlestick')) {
                     console.error('❌ Candlestick chart plugin not loaded');
@@ -1568,6 +1661,17 @@
                 if (activeIndicators.ema) {
                     const ema = calcEMA(closes, 20);
                     datasets.push(lineOverlay('EMA (20)', times, ema, '#FFD700'));
+                }
+
+                const bullTraps = traps.filter(t => t.type === 'bull');
+                const bearTraps = traps.filter(t => t.type === 'bear');
+
+                if (bullTraps.length) {
+                    datasets.push(trapMarkerOverlay('Bull Trap', bullTraps, '#FF3366', 180));
+                }
+
+                if (bearTraps.length) {
+                    datasets.push(trapMarkerOverlay('Bear Trap', bearTraps, '#00FF88', 0));
                 }
 
                 if (candleChart) {
@@ -1594,33 +1698,66 @@
                 };
             }
 
+            function trapMarkerOverlay(label, traps, color, rotation) {
+                return {
+                    type: 'line',
+                    label: label,
+                    data: traps.map(t => ({ x: new Date(t.time).getTime(), y: t.price })),
+                    showLine: false,
+                    pointStyle: 'triangle',
+                    rotation: rotation,
+                    pointRadius: 8,
+                    pointHoverRadius: 10,
+                    backgroundColor: color,
+                    borderColor: color
+                };
+            }
+
             function renderRSIChart(times, closes) {
                 const container = document.getElementById('rsiContainer');
-                container.style.display = activeIndicators.rsi ? 'block' : 'none';
-                if (!activeIndicators.rsi) return;
+                const showAny = activeIndicators.rsi || activeIndicators.rsi2;
+                container.style.display = showAny ? 'block' : 'none';
+                if (!showAny) return;
 
-                const rsi = calcRSI(closes, 14);
+                const datasets = [];
+
+                if (activeIndicators.rsi) {
+                    const rsi = calcRSI(closes, 14);
+                    datasets.push({
+                        label: 'RSI (14)',
+                        data: times.map((t, i) => ({ x: new Date(t).getTime(), y: rsi[i] })),
+                        borderColor: '#FFD700',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.1
+                    });
+                }
+
+                if (activeIndicators.rsi2) {
+                    const rsi2 = calcRSI(closes, 2);
+                    datasets.push({
+                        label: 'RSI (2)',
+                        data: times.map((t, i) => ({ x: new Date(t).getTime(), y: rsi2[i] })),
+                        borderColor: '#00BFFF',
+                        borderWidth: 2,
+                        borderDash: [4, 3],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.1
+                    });
+                }
+
+                datasets.push(overboughtOversoldLine(times, 70, '#FF3366'));
+                datasets.push(overboughtOversoldLine(times, 30, '#00FF88'));
+
                 const ctx = document.getElementById('rsiChart');
 
                 if (rsiChart) rsiChart.destroy();
 
                 rsiChart = new Chart(ctx, {
                     type: 'line',
-                    data: {
-                        datasets: [
-                            {
-                                label: 'RSI (14)',
-                                data: times.map((t, i) => ({ x: new Date(t).getTime(), y: rsi[i] })),
-                                borderColor: '#FFD700',
-                                borderWidth: 2,
-                                pointRadius: 0,
-                                fill: false,
-                                tension: 0.1
-                            },
-                            overboughtOversoldLine(times, 70, '#FF3366'),
-                            overboughtOversoldLine(times, 30, '#00FF88')
-                        ]
-                    },
+                    data: { datasets },
                     options: baseTimeChartOptions(false, { min: 0, max: 100 })
                 });
             }
