@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FLUX - Gold Analyzer (LIVE API)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.1/dist/chartjs-chart-financial.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -886,6 +888,32 @@
             </div>
         </div>
 
+        <div class="chart-section" id="candleChartSection">
+            <div class="chart-header">
+                <h2 class="chart-title">📊 Candlestick Chart</h2>
+                <div class="time-buttons" id="candleRangeButtons">
+                    <button class="time-btn active" data-range="daily">Daily</button>
+                    <button class="time-btn" data-range="weekly">Weekly</button>
+                    <button class="time-btn" data-range="yearly">Yearly</button>
+                </div>
+            </div>
+            <div class="time-buttons" id="indicatorButtons" style="margin-bottom: 25px;">
+                <button class="time-btn active" data-indicator="ma">MA (20)</button>
+                <button class="time-btn active" data-indicator="ema">EMA (20)</button>
+                <button class="time-btn" data-indicator="rsi">RSI</button>
+                <button class="time-btn" data-indicator="macd">MACD</button>
+            </div>
+            <div class="chart-container" style="height: 450px;">
+                <canvas id="candleChart"></canvas>
+            </div>
+            <div class="chart-container" id="rsiContainer" style="height: 160px; display:none; margin-top: 25px;">
+                <canvas id="rsiChart"></canvas>
+            </div>
+            <div class="chart-container" id="macdContainer" style="height: 180px; display:none; margin-top: 25px;">
+                <canvas id="macdChart"></canvas>
+            </div>
+        </div>
+
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-label">Gold/Silver Ratio</div>
@@ -1375,6 +1403,369 @@
                 init();
             }
             
+        })();
+    </script>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const CANDLES_API_URL = '/api/candles';
+
+            let candleChart = null;
+            let rsiChart = null;
+            let macdChart = null;
+            let currentRange = 'daily';
+            let activeIndicators = { ma: true, ema: true, rsi: false, macd: false };
+
+            // ---------- Indicator math ----------
+
+            function calcSMA(closes, period) {
+                const out = new Array(closes.length).fill(null);
+                let sum = 0;
+                for (let i = 0; i < closes.length; i++) {
+                    sum += closes[i];
+                    if (i >= period) sum -= closes[i - period];
+                    if (i >= period - 1) out[i] = sum / period;
+                }
+                return out;
+            }
+
+            // Generic EMA over a value array that may start with nulls (e.g. MACD line).
+            // Seeds with a plain average of the first `period` non-null values.
+            function calcEMA(values, period) {
+                const out = new Array(values.length).fill(null);
+                const k = 2 / (period + 1);
+                let seedSum = 0;
+                let seedCount = 0;
+                let prevEma = null;
+
+                for (let i = 0; i < values.length; i++) {
+                    const v = values[i];
+                    if (v === null || v === undefined) continue;
+
+                    if (prevEma === null) {
+                        seedSum += v;
+                        seedCount++;
+                        if (seedCount === period) {
+                            prevEma = seedSum / period;
+                            out[i] = prevEma;
+                        }
+                    } else {
+                        prevEma = v * k + prevEma * (1 - k);
+                        out[i] = prevEma;
+                    }
+                }
+                return out;
+            }
+
+            // Wilder's RSI
+            function calcRSI(closes, period) {
+                const out = new Array(closes.length).fill(null);
+                if (closes.length <= period) return out;
+
+                let avgGain = 0;
+                let avgLoss = 0;
+
+                for (let i = 1; i <= period; i++) {
+                    const change = closes[i] - closes[i - 1];
+                    if (change > 0) avgGain += change;
+                    else avgLoss += -change;
+                }
+                avgGain /= period;
+                avgLoss /= period;
+
+                out[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+
+                for (let i = period + 1; i < closes.length; i++) {
+                    const change = closes[i] - closes[i - 1];
+                    const gain = change > 0 ? change : 0;
+                    const loss = change < 0 ? -change : 0;
+
+                    avgGain = (avgGain * (period - 1) + gain) / period;
+                    avgLoss = (avgLoss * (period - 1) + loss) / period;
+
+                    out[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+                }
+
+                return out;
+            }
+
+            function calcMACD(closes, fastPeriod, slowPeriod, signalPeriod) {
+                const emaFast = calcEMA(closes, fastPeriod);
+                const emaSlow = calcEMA(closes, slowPeriod);
+
+                const macdLine = closes.map((_, i) => {
+                    if (emaFast[i] === null || emaSlow[i] === null) return null;
+                    return emaFast[i] - emaSlow[i];
+                });
+
+                const signalLine = calcEMA(macdLine, signalPeriod);
+
+                const histogram = closes.map((_, i) => {
+                    if (macdLine[i] === null || signalLine[i] === null) return null;
+                    return macdLine[i] - signalLine[i];
+                });
+
+                return { macdLine, signalLine, histogram };
+            }
+
+            // ---------- Data fetching ----------
+
+            async function fetchCandles(range) {
+                try {
+                    console.log('📊 Fetching candle data (' + range + ')...');
+                    const response = await fetch(CANDLES_API_URL + '?range=' + range);
+
+                    if (!response.ok) {
+                        throw new Error('API Error: ' + response.status);
+                    }
+
+                    const result = await response.json();
+
+                    if (!result.success) {
+                        throw new Error(result.error || 'Failed to load candle data');
+                    }
+
+                    renderAllCharts(result.data);
+                } catch (error) {
+                    console.error('❌ Candle chart error:', error);
+                }
+            }
+
+            // ---------- Chart rendering ----------
+
+            function renderAllCharts(candles) {
+                const times = candles.map(c => c.time);
+                const closes = candles.map(c => c.close);
+
+                renderCandleChart(candles, times, closes);
+                renderRSIChart(times, closes);
+                renderMACDChart(times, closes);
+            }
+
+            function renderCandleChart(candles, times, closes) {
+                const ctx = document.getElementById('candleChart');
+                if (typeof Chart === 'undefined' || !Chart.registry.getController('candlestick')) {
+                    console.error('❌ Candlestick chart plugin not loaded');
+                    return;
+                }
+
+                const ohlc = candles.map(c => ({ x: new Date(c.time).getTime(), o: c.open, h: c.high, l: c.low, c: c.close }));
+
+                const datasets = [{
+                    label: 'XAU/USD',
+                    data: ohlc,
+                    color: { up: '#00FF88', down: '#FF3366', unchanged: '#A0A0A0' },
+                    borderColor: { up: '#00FF88', down: '#FF3366', unchanged: '#A0A0A0' }
+                }];
+
+                if (activeIndicators.ma) {
+                    const ma = calcSMA(closes, 20);
+                    datasets.push(lineOverlay('MA (20)', times, ma, '#00BFFF'));
+                }
+
+                if (activeIndicators.ema) {
+                    const ema = calcEMA(closes, 20);
+                    datasets.push(lineOverlay('EMA (20)', times, ema, '#FFD700'));
+                }
+
+                if (candleChart) {
+                    candleChart.destroy();
+                }
+
+                candleChart = new Chart(ctx, {
+                    type: 'candlestick',
+                    data: { datasets },
+                    options: baseTimeChartOptions(true)
+                });
+            }
+
+            function lineOverlay(label, times, values, color) {
+                return {
+                    type: 'line',
+                    label: label,
+                    data: times.map((t, i) => ({ x: new Date(t).getTime(), y: values[i] })),
+                    borderColor: color,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0.1
+                };
+            }
+
+            function renderRSIChart(times, closes) {
+                const container = document.getElementById('rsiContainer');
+                container.style.display = activeIndicators.rsi ? 'block' : 'none';
+                if (!activeIndicators.rsi) return;
+
+                const rsi = calcRSI(closes, 14);
+                const ctx = document.getElementById('rsiChart');
+
+                if (rsiChart) rsiChart.destroy();
+
+                rsiChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [
+                            {
+                                label: 'RSI (14)',
+                                data: times.map((t, i) => ({ x: new Date(t).getTime(), y: rsi[i] })),
+                                borderColor: '#FFD700',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                fill: false,
+                                tension: 0.1
+                            },
+                            overboughtOversoldLine(times, 70, '#FF3366'),
+                            overboughtOversoldLine(times, 30, '#00FF88')
+                        ]
+                    },
+                    options: baseTimeChartOptions(false, { min: 0, max: 100 })
+                });
+            }
+
+            function overboughtOversoldLine(times, level, color) {
+                return {
+                    label: level + ' line',
+                    data: times.map(t => ({ x: new Date(t).getTime(), y: level })),
+                    borderColor: color,
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false
+                };
+            }
+
+            function renderMACDChart(times, closes) {
+                const container = document.getElementById('macdContainer');
+                container.style.display = activeIndicators.macd ? 'block' : 'none';
+                if (!activeIndicators.macd) return;
+
+                const { macdLine, signalLine, histogram } = calcMACD(closes, 12, 26, 9);
+                const ctx = document.getElementById('macdChart');
+
+                if (macdChart) macdChart.destroy();
+
+                macdChart = new Chart(ctx, {
+                    data: {
+                        datasets: [
+                            {
+                                type: 'bar',
+                                label: 'Histogram',
+                                data: times.map((t, i) => ({ x: new Date(t).getTime(), y: histogram[i] })),
+                                backgroundColor: histogram.map(v => (v === null ? 'transparent' : (v >= 0 ? 'rgba(0,255,136,0.5)' : 'rgba(255,51,102,0.5)')))
+                            },
+                            {
+                                type: 'line',
+                                label: 'MACD',
+                                data: times.map((t, i) => ({ x: new Date(t).getTime(), y: macdLine[i] })),
+                                borderColor: '#00BFFF',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                fill: false
+                            },
+                            {
+                                type: 'line',
+                                label: 'Signal',
+                                data: times.map((t, i) => ({ x: new Date(t).getTime(), y: signalLine[i] })),
+                                borderColor: '#FFD700',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: baseTimeChartOptions(false)
+                });
+            }
+
+            function baseTimeChartOptions(isCandlestick, yRange) {
+                const scales = {
+                    x: {
+                        type: 'time',
+                        grid: { color: 'rgba(255, 215, 0, 0.1)' },
+                        ticks: { color: '#A0A0A0', font: { family: 'Space Mono' } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255, 215, 0, 0.1)' },
+                        ticks: { color: '#A0A0A0', font: { family: 'Space Mono' } }
+                    }
+                };
+
+                if (yRange) {
+                    scales.y.min = yRange.min;
+                    scales.y.max = yRange.max;
+                }
+
+                return {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: {
+                            display: !isCandlestick,
+                            labels: { color: '#A0A0A0', font: { family: 'Space Mono' } }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(26, 26, 26, 0.95)',
+                            titleColor: '#FFD700',
+                            bodyColor: '#FFFFFF',
+                            borderColor: '#FFD700',
+                            borderWidth: 2,
+                            padding: 12
+                        }
+                    },
+                    scales
+                };
+            }
+
+            // ---------- UI wiring ----------
+
+            function setupControls() {
+                document.querySelectorAll('#candleRangeButtons .time-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('#candleRangeButtons .time-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        currentRange = btn.dataset.range;
+                        fetchCandles(currentRange);
+                    });
+                });
+
+                document.querySelectorAll('#indicatorButtons .time-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        btn.classList.toggle('active');
+                        const key = btn.dataset.indicator;
+                        activeIndicators[key] = btn.classList.contains('active');
+                        fetchCandles(currentRange);
+                    });
+                });
+            }
+
+            async function initCandleFeature() {
+                let attempts = 0;
+                while (typeof Chart === 'undefined' && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+
+                if (typeof Chart === 'undefined') {
+                    console.error('❌ Chart.js failed to load (candlestick feature)');
+                    return;
+                }
+
+                setupControls();
+                await fetchCandles(currentRange);
+
+                console.log('✅ Candlestick chart initialized');
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initCandleFeature);
+            } else {
+                initCandleFeature();
+            }
         })();
     </script>
 </body>
