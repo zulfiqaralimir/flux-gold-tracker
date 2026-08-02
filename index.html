@@ -725,6 +725,33 @@
             font-size: 1.1rem;
         }
 
+        .forecast-status {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 3px 8px;
+            border-radius: 3px;
+        }
+
+        .forecast-status.pending {
+            color: var(--gold-primary);
+            background: rgba(255, 215, 0, 0.12);
+            border: 1px solid var(--gold-dark);
+        }
+
+        .forecast-status.confirmed {
+            color: var(--accent-green);
+            background: rgba(0, 255, 136, 0.12);
+            border: 1px solid var(--accent-green);
+        }
+
+        .forecast-status.missed {
+            color: var(--accent-red, #FF3366);
+            background: rgba(255, 51, 102, 0.12);
+            border: 1px solid var(--accent-red, #FF3366);
+        }
+
         @media (max-width: 768px) {
             .logo {
                 font-size: 2.5rem;
@@ -756,7 +783,6 @@
             <h1 class="logo">ZulfiQode - FLUX</h1>
             <p class="tagline">Gold Analyzer</p>
             <p class="hypothetical-note" style="font-size:0.75rem;opacity:0.7;font-style:italic;">Hypothetical scenario: an indicator that would flag a 2026 gold blow-off top at $5590 and crash to $3942, in the style of a track record that includes predicting the 2008 Global Financial Crisis in late 2005 — illustrative only, not a real backtested result.</p>
-            <p class="press-note" style="font-size:0.75rem;opacity:0.7;">In the Press: <a href="https://blackirontimes.com/news/bitcoin-could-fall-below-60-000-before-reaching-48-000-says-zulfiqudo-analysis" target="_blank" rel="noopener noreferrer">"Bitcoin Could Fall Below $60,000 Before Reaching $48,000, Says ZulfiQudo Analysis"</a> — Black Iron Times, July 28, 2026 (forecast pending)</p>
             <div class="api-badge">🔴 LIVE DATA</div>
         </header>
 
@@ -878,6 +904,24 @@
             <div class="stat-box">
                 <div class="stat-label">Last API Update</div>
                 <div class="stat-value" id="apiTimestamp">--</div>
+            </div>
+        </div>
+
+        <!-- Forecasts & Predictions Section -->
+        <div class="news-section">
+            <div class="news-header">
+                <h2 class="news-title">🔮 Forecasts &amp; Predictions</h2>
+            </div>
+            <div class="news-grid">
+                <a class="news-card" href="https://blackirontimes.com/news/bitcoin-could-fall-below-60-000-before-reaching-48-000-says-zulfiqudo-analysis" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;">
+                    <div class="news-source">Black Iron Times</div>
+                    <div class="news-headline">Bitcoin Could Fall Below $60,000 Before Reaching $48,000, Says ZulfiQudo Analysis</div>
+                    <div class="news-description">ZulfiQudo's technical analysis suggests Bitcoin could break below $60,000 before targeting the $48,000 region.</div>
+                    <div class="news-meta">
+                        <span class="news-time">July 28, 2026</span>
+                        <span class="forecast-status pending">Pending</span>
+                    </div>
+                </a>
             </div>
         </div>
 
