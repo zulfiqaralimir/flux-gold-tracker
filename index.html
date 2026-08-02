@@ -786,7 +786,7 @@
         <header>
             <h1 class="logo">ZulfiQode - FLUX</h1>
             <p class="tagline">Gold Analyzer</p>
-            <p class="app-description">Real-time gold (XAU/USD) technical indicator tracking RSI, RSI2, MACD, MA/EMA and momentum-based Market Heat signals.</p>
+            <p class="app-description">Real-time gold (XAU/USD) technical indicator tracking RSI, RSI2, MACD, MA/EMA and momentum-based Market Heat readings.</p>
             <div class="api-badge">🔴 LIVE DATA</div>
         </header>
 
@@ -818,7 +818,7 @@
         <!-- Buy/Sell Signal Section -->
         <div class="signal-section" id="signalSection" style="display: none;">
             <div class="signal-header">
-                <h2 class="signal-title">⚡ Trading Signal Analysis</h2>
+                <h2 class="signal-title">⚡ Trading Sent Analysis</h2>
             </div>
             <div class="signal-grid">
                 <div class="signal-card" id="signalCard">
@@ -831,7 +831,7 @@
                     
                     <div class="signal-details">
                         <div class="signal-detail-row">
-                            <span class="signal-detail-label">Signal Strength</span>
+                            <span class="signal-detail-label">Sent Strength</span>
                             <span class="signal-detail-value" id="signalStrengthText">--/10</span>
                         </div>
                         <div class="strength-meter">
@@ -1310,7 +1310,7 @@
                 
                 // Update signal type
                 signalIconLarge.textContent = signalData.icon;
-                signalLabel.textContent = signalData.type + ' SIGNAL';
+                signalLabel.textContent = signalData.type + ' SENT';
                 signalLabel.className = 'signal-label ' + signalType;
                 
                 // Update strength
