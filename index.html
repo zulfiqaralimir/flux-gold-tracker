@@ -833,6 +833,10 @@
                     
                     <div class="signal-details">
                         <div class="signal-detail-row">
+                            <span class="signal-detail-label">Market Heat</span>
+                            <span class="signal-detail-value" id="signalHeatValue">--°</span>
+                        </div>
+                        <div class="signal-detail-row">
                             <span class="signal-detail-label">Sent Strength</span>
                             <span class="signal-detail-value" id="signalStrengthText">--/10</span>
                         </div>
@@ -873,6 +877,10 @@
                     </div>
 
                     <div class="signal-details">
+                        <div class="signal-detail-row">
+                            <span class="signal-detail-label">Market Heat</span>
+                            <span class="signal-detail-value" id="signalHeatValueSPX">--°</span>
+                        </div>
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Sent Strength</span>
                             <span class="signal-detail-value" id="signalStrengthTextSPX">--/10</span>
@@ -1341,7 +1349,7 @@
 
                     if (data.success && data.data && data.data.signal) {
                         console.log(`✅ S&P 500 Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateSignalDisplay(data.data.signal, 'SPX');
+                        updateSignalDisplay(data.data.signal, 'SPX', data.data.currentHeat);
                     } else {
                         throw new Error(data.error || 'Failed to fetch S&P 500 Market Heat');
                     }
@@ -1383,18 +1391,19 @@
                 
                 // Update Signal Section if signal data exists
                 if (heatData.signal) {
-                    updateSignalDisplay(heatData.signal);
+                    updateSignalDisplay(heatData.signal, '', heatData.currentHeat);
                 }
                 
                 console.log('🔥 Market Heat display updated');
             }
             
             // Update Buy/Sell Signal display (suffix lets this render Gold or S&P 500 cards)
-            function updateSignalDisplay(signalData, suffix = '') {
+            function updateSignalDisplay(signalData, suffix = '', currentHeat = null) {
                 const signalSection = document.getElementById('signalSection' + suffix);
                 const signalCard = document.getElementById('signalCard' + suffix);
                 const signalIconLarge = document.getElementById('signalIconLarge' + suffix);
                 const signalLabel = document.getElementById('signalLabel' + suffix);
+                const signalHeatValue = document.getElementById('signalHeatValue' + suffix);
                 const signalStrengthText = document.getElementById('signalStrengthText' + suffix);
                 const strengthFill = document.getElementById('strengthFill' + suffix);
                 const pulseIcon = document.getElementById('pulseIcon' + suffix);
@@ -1412,7 +1421,12 @@
                 signalIconLarge.textContent = signalData.icon;
                 signalLabel.textContent = signalData.type + ' SENT';
                 signalLabel.className = 'signal-label ' + signalType;
-                
+
+                // Update market heat value
+                if (signalHeatValue && currentHeat !== null) {
+                    signalHeatValue.textContent = currentHeat.toFixed(1) + '°';
+                }
+
                 // Update strength
                 signalStrengthText.textContent = signalData.strength + '/10 (' + signalData.strengthLabel + ')';
                 const strengthPercentage = (signalData.strength / 10) * 100;
