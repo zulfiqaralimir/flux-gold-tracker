@@ -952,6 +952,51 @@
             </div>
         </div>
 
+        <!-- Microsoft Buy/Sell Signal Section (same RSI/MACD/Pulse Speed logic as Gold) -->
+        <div class="signal-section" id="signalSectionMSFT" style="display: none;">
+            <div class="signal-header">
+                <h2 class="signal-title">⚡ Microsoft Trading Sent Analysis</h2>
+            </div>
+            <div class="signal-grid">
+                <div class="signal-card" id="signalCardMSFT">
+                    <div class="signal-type">
+                        <span class="signal-icon-large" id="signalIconLargeMSFT">⚪</span>
+                        <div>
+                            <div class="signal-label" id="signalLabelMSFT">LOADING...</div>
+                        </div>
+                    </div>
+
+                    <div class="signal-details">
+                        <div class="signal-detail-row">
+                            <span class="signal-detail-label">Market Heat</span>
+                            <span class="signal-detail-value" id="signalHeatValueMSFT">--°</span>
+                        </div>
+                        <div class="signal-detail-row">
+                            <span class="signal-detail-label">Sent Strength</span>
+                            <span class="signal-detail-value" id="signalStrengthTextMSFT">--/10</span>
+                        </div>
+                        <div class="strength-meter">
+                            <div class="strength-fill" id="strengthFillMSFT" style="width: 0%"></div>
+                        </div>
+
+                        <div class="signal-detail-row" style="margin-top: 20px;">
+                            <span class="signal-detail-label">Pulse Speed</span>
+                            <div class="pulse-indicator" id="pulseIndicatorMSFT">
+                                <span class="pulse-icon" id="pulseIconMSFT">🚶</span>
+                                <span id="pulseSpeedMSFT">Steady</span>
+                            </div>
+                        </div>
+
+                        <div class="signal-detail-row">
+                            <span class="signal-detail-label">Confidence Level</span>
+                            <span class="confidence-badge" id="confidenceBadgeMSFT">--%</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="live-price-section">
             <div class="price-card">
                 <div class="price-label">Current Gold Price</div>
@@ -1071,6 +1116,7 @@
             const MARKET_HEAT_API_URL = '/api/market-heat'; // Market Heat RSI system
             const MARKET_HEAT_SPX_API_URL = '/api/market-heat-spx'; // S&P 500 Market Heat RSI system
             const MARKET_HEAT_BTC_API_URL = '/api/market-heat-btc'; // Bitcoin Market Heat RSI system
+            const MARKET_HEAT_MSFT_API_URL = '/api/market-heat-msft'; // Microsoft Market Heat RSI system
             const UPDATE_INTERVAL = 3600000; // 1 hour (to stay within API limits)
             const NEWS_UPDATE_INTERVAL = 3600000; // 1 hour
             const HEAT_UPDATE_INTERVAL = 3600000; // 1 hour for Market Heat
@@ -1432,6 +1478,32 @@
                 }
             }
 
+            // Fetch and display Microsoft signal (same logic as Gold, applied to MSFT)
+            async function fetchMarketHeatMSFT() {
+                try {
+                    console.log('🔥 Fetching Microsoft Market Heat data...');
+
+                    const response = await fetch(MARKET_HEAT_MSFT_API_URL);
+
+                    if (!response.ok) {
+                        throw new Error(`Server Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.success && data.data && data.data.signal) {
+                        console.log(`✅ Microsoft Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
+                        updateSignalDisplay(data.data.signal, 'MSFT', data.data.currentHeat);
+                    } else {
+                        throw new Error(data.error || 'Failed to fetch Microsoft Market Heat');
+                    }
+
+                } catch (error) {
+                    console.error('❌ Microsoft Market Heat Error:', error);
+                    document.getElementById('signalSectionMSFT').style.display = 'none';
+                }
+            }
+
             // Update Market Heat display
             function updateHeatDisplay(heatData) {
                 const banner = document.getElementById('heatAlertBanner');
@@ -1549,6 +1621,9 @@
                 // Fetch initial Bitcoin signal data
                 await fetchMarketHeatBTC();
 
+                // Fetch initial Microsoft signal data
+                await fetchMarketHeatMSFT();
+
                 // Hide loading overlay
                 document.getElementById('loadingOverlay').classList.add('hidden');
 
@@ -1558,6 +1633,7 @@
                 setInterval(fetchMarketHeat, HEAT_UPDATE_INTERVAL);
                 setInterval(fetchMarketHeatSPX, HEAT_UPDATE_INTERVAL);
                 setInterval(fetchMarketHeatBTC, HEAT_UPDATE_INTERVAL);
+                setInterval(fetchMarketHeatMSFT, HEAT_UPDATE_INTERVAL);
 
                 console.log('✅ FLUX API Version fully initialized!');
                 console.log('🔄 Price auto-refresh every 1 hour (to stay within API limits)');
@@ -1565,6 +1641,7 @@
                 console.log('🔥 Market Heat auto-refresh every hour');
                 console.log('🔥 S&P 500 signal auto-refresh every hour');
                 console.log('🔥 Bitcoin signal auto-refresh every hour');
+                console.log('🔥 Microsoft signal auto-refresh every hour');
             }
             
             // Start when DOM is ready
