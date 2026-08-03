@@ -292,6 +292,28 @@ export default async function handler(req, res) {
             return 'WEAK';
         };
 
+        // Undisguised reference values: same strength/confidence branching,
+        // fed by raw RSI instead of the composite Heat score. Personal
+        // reference only, shown dim in the UI - not the driving signal.
+        const computeRawSignal = (rsi) => {
+            if (rsi < 40) {
+                if (rsi < 10) return { strength: 10, confidence: 98 };
+                if (rsi < 20) return { strength: 8, confidence: 80 };
+                if (rsi < 30) return { strength: 6, confidence: 60 };
+                return { strength: 4, confidence: 40 };
+            }
+            if (rsi > 60) {
+                if (rsi > 90) return { strength: 10, confidence: 98 };
+                if (rsi > 80) return { strength: 8, confidence: 80 };
+                if (rsi > 70) return { strength: 6, confidence: 60 };
+                return { strength: 4, confidence: 40 };
+            }
+            const distanceFromMid = Math.abs(rsi - 50);
+            const strength = Math.max(1, Math.min(3, Math.round(1 + distanceFromMid / 5)));
+            return { strength, confidence: Math.round(30 + distanceFromMid * 2) };
+        };
+        const rawSignal = computeRawSignal(latestRSI);
+
         // History (most recent first), driven by the composite score
         const historyPoints = [];
         for (let i = lastIdx; i >= 0 && historyPoints.length < 30; i--) {
@@ -365,6 +387,8 @@ export default async function handler(req, res) {
                     strength: signalStrength,
                     strengthLabel: getStrengthLabel(signalStrength),
                     confidence: confidence,
+                    rawStrength: rawSignal.strength,
+                    rawConfidence: rawSignal.confidence,
                     pulseSpeed: pulseSpeed,
                     pulseIcon: pulseIcon,
                     pulseValue: pulseValue.toFixed(2),
