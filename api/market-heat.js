@@ -196,8 +196,13 @@ export default async function handler(req, res) {
             signalType = 'HOLD';
             signalColor = 'gray';
             signalIcon = '⚪';
-            signalStrength = 3;
-            confidence = 50;
+
+            // Scale strength/confidence by how close RSI is to the 40/60 edges,
+            // instead of a flat value, so two neutral readings aren't identical
+            const distanceFromMid = Math.abs(latestRSI - 50); // 0 (at 50) to 10 (at 40 or 60)
+            signalStrength = Math.max(1, Math.min(3, Math.round(1 + distanceFromMid / 5)));
+            confidence = Math.round(30 + distanceFromMid * 2);
+
             supportingIndicators.push('ℹ️ Neutral Heat (' + latestRSI.toFixed(1) + '° - RANGE: 40-60°)');
             supportingIndicators.push('ℹ️ Wait for Market Heat < 40° (BUY) or > 60° (SELL)');
         }
