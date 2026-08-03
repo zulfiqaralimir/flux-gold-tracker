@@ -858,6 +858,47 @@
             </div>
         </div>
 
+        <!-- S&P 500 Buy/Sell Signal Section (same RSI/MACD/Pulse Speed logic as Gold) -->
+        <div class="signal-section" id="signalSectionSPX" style="display: none;">
+            <div class="signal-header">
+                <h2 class="signal-title">⚡ S&amp;P 500 Trading Sent Analysis</h2>
+            </div>
+            <div class="signal-grid">
+                <div class="signal-card" id="signalCardSPX">
+                    <div class="signal-type">
+                        <span class="signal-icon-large" id="signalIconLargeSPX">⚪</span>
+                        <div>
+                            <div class="signal-label" id="signalLabelSPX">LOADING...</div>
+                        </div>
+                    </div>
+
+                    <div class="signal-details">
+                        <div class="signal-detail-row">
+                            <span class="signal-detail-label">Sent Strength</span>
+                            <span class="signal-detail-value" id="signalStrengthTextSPX">--/10</span>
+                        </div>
+                        <div class="strength-meter">
+                            <div class="strength-fill" id="strengthFillSPX" style="width: 0%"></div>
+                        </div>
+
+                        <div class="signal-detail-row" style="margin-top: 20px;">
+                            <span class="signal-detail-label">Pulse Speed</span>
+                            <div class="pulse-indicator" id="pulseIndicatorSPX">
+                                <span class="pulse-icon" id="pulseIconSPX">🚶</span>
+                                <span id="pulseSpeedSPX">Steady</span>
+                            </div>
+                        </div>
+
+                        <div class="signal-detail-row">
+                            <span class="signal-detail-label">Confidence Level</span>
+                            <span class="confidence-badge" id="confidenceBadgeSPX">--%</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="live-price-section">
             <div class="price-card">
                 <div class="price-label">Current Gold Price</div>
@@ -975,6 +1016,7 @@
             const METALS_API_URL = '/api/metals'; // Use serverless function
             const NEWS_API_URL = '/api/news'; // Corrected endpoint
             const MARKET_HEAT_API_URL = '/api/market-heat'; // Market Heat RSI system
+            const MARKET_HEAT_SPX_API_URL = '/api/market-heat-spx'; // S&P 500 Market Heat RSI system
             const UPDATE_INTERVAL = 3600000; // 1 hour (to stay within API limits)
             const NEWS_UPDATE_INTERVAL = 3600000; // 1 hour
             const HEAT_UPDATE_INTERVAL = 3600000; // 1 hour for Market Heat
@@ -1283,7 +1325,33 @@
                     document.getElementById('heatAlertBanner').style.display = 'none';
                 }
             }
-            
+
+            // Fetch and display S&P 500 signal (same logic as Gold, applied to SPX)
+            async function fetchMarketHeatSPX() {
+                try {
+                    console.log('🔥 Fetching S&P 500 Market Heat data...');
+
+                    const response = await fetch(MARKET_HEAT_SPX_API_URL);
+
+                    if (!response.ok) {
+                        throw new Error(`Server Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.success && data.data && data.data.signal) {
+                        console.log(`✅ S&P 500 Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
+                        updateSignalDisplay(data.data.signal, 'SPX');
+                    } else {
+                        throw new Error(data.error || 'Failed to fetch S&P 500 Market Heat');
+                    }
+
+                } catch (error) {
+                    console.error('❌ S&P 500 Market Heat Error:', error);
+                    document.getElementById('signalSectionSPX').style.display = 'none';
+                }
+            }
+
             // Update Market Heat display
             function updateHeatDisplay(heatData) {
                 const banner = document.getElementById('heatAlertBanner');
@@ -1321,17 +1389,17 @@
                 console.log('🔥 Market Heat display updated');
             }
             
-            // Update Buy/Sell Signal display
-            function updateSignalDisplay(signalData) {
-                const signalSection = document.getElementById('signalSection');
-                const signalCard = document.getElementById('signalCard');
-                const signalIconLarge = document.getElementById('signalIconLarge');
-                const signalLabel = document.getElementById('signalLabel');
-                const signalStrengthText = document.getElementById('signalStrengthText');
-                const strengthFill = document.getElementById('strengthFill');
-                const pulseIcon = document.getElementById('pulseIcon');
-                const pulseSpeed = document.getElementById('pulseSpeed');
-                const confidenceBadge = document.getElementById('confidenceBadge');
+            // Update Buy/Sell Signal display (suffix lets this render Gold or S&P 500 cards)
+            function updateSignalDisplay(signalData, suffix = '') {
+                const signalSection = document.getElementById('signalSection' + suffix);
+                const signalCard = document.getElementById('signalCard' + suffix);
+                const signalIconLarge = document.getElementById('signalIconLarge' + suffix);
+                const signalLabel = document.getElementById('signalLabel' + suffix);
+                const signalStrengthText = document.getElementById('signalStrengthText' + suffix);
+                const strengthFill = document.getElementById('strengthFill' + suffix);
+                const pulseIcon = document.getElementById('pulseIcon' + suffix);
+                const pulseSpeed = document.getElementById('pulseSpeed' + suffix);
+                const confidenceBadge = document.getElementById('confidenceBadge' + suffix);
 
                 // Show signal section
                 signalSection.style.display = 'block';
@@ -1388,19 +1456,24 @@
                 
                 // Fetch initial Market Heat data
                 await fetchMarketHeat();
-                
+
+                // Fetch initial S&P 500 signal data
+                await fetchMarketHeatSPX();
+
                 // Hide loading overlay
                 document.getElementById('loadingOverlay').classList.add('hidden');
-                
+
                 // Set up auto-refresh (every 60 seconds for prices, every hour for news)
                 setInterval(fetchGoldPrices, UPDATE_INTERVAL);
                 setInterval(fetchGoldNews, NEWS_UPDATE_INTERVAL);
                 setInterval(fetchMarketHeat, HEAT_UPDATE_INTERVAL);
-                
+                setInterval(fetchMarketHeatSPX, HEAT_UPDATE_INTERVAL);
+
                 console.log('✅ FLUX API Version fully initialized!');
                 console.log('🔄 Price auto-refresh every 1 hour (to stay within API limits)');
                 console.log('📰 News auto-refresh every hour');
                 console.log('🔥 Market Heat auto-refresh every hour');
+                console.log('🔥 S&P 500 signal auto-refresh every hour');
             }
             
             // Start when DOM is ready
