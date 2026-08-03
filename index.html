@@ -835,6 +835,7 @@
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Market Heat</span>
                             <span class="signal-detail-value" id="signalHeatValue">--°</span>
+                            <span id="signalHeatRef" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
                         </div>
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Sent Strength</span>
@@ -880,6 +881,7 @@
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Market Heat</span>
                             <span class="signal-detail-value" id="signalHeatValueSPX">--°</span>
+                            <span id="signalHeatRefSPX" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
                         </div>
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Sent Strength</span>
@@ -925,6 +927,7 @@
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Market Heat</span>
                             <span class="signal-detail-value" id="signalHeatValueBTC">--°</span>
+                            <span id="signalHeatRefBTC" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
                         </div>
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Sent Strength</span>
@@ -970,6 +973,7 @@
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Market Heat</span>
                             <span class="signal-detail-value" id="signalHeatValueMSFT">--°</span>
+                            <span id="signalHeatRefMSFT" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
                         </div>
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Sent Strength</span>
@@ -1015,6 +1019,7 @@
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Market Heat</span>
                             <span class="signal-detail-value" id="signalHeatValueTSLA">--°</span>
+                            <span id="signalHeatRefTSLA" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
                         </div>
                         <div class="signal-detail-row">
                             <span class="signal-detail-label">Sent Strength</span>
@@ -1487,7 +1492,7 @@
 
                     if (data.success && data.data && data.data.signal) {
                         console.log(`✅ S&P 500 Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateSignalDisplay(data.data.signal, 'SPX', data.data.currentHeat);
+                        updateSignalDisplay(data.data.signal, 'SPX', data.data.currentHeat, data.data.baseline);
                     } else {
                         throw new Error(data.error || 'Failed to fetch S&P 500 Market Heat');
                     }
@@ -1513,7 +1518,7 @@
 
                     if (data.success && data.data && data.data.signal) {
                         console.log(`✅ Bitcoin Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateSignalDisplay(data.data.signal, 'BTC', data.data.currentHeat);
+                        updateSignalDisplay(data.data.signal, 'BTC', data.data.currentHeat, data.data.baseline);
                     } else {
                         throw new Error(data.error || 'Failed to fetch Bitcoin Market Heat');
                     }
@@ -1539,7 +1544,7 @@
 
                     if (data.success && data.data && data.data.signal) {
                         console.log(`✅ Microsoft Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateSignalDisplay(data.data.signal, 'MSFT', data.data.currentHeat);
+                        updateSignalDisplay(data.data.signal, 'MSFT', data.data.currentHeat, data.data.baseline);
                     } else {
                         throw new Error(data.error || 'Failed to fetch Microsoft Market Heat');
                     }
@@ -1565,7 +1570,7 @@
 
                     if (data.success && data.data && data.data.signal) {
                         console.log(`✅ Tesla Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateSignalDisplay(data.data.signal, 'TSLA', data.data.currentHeat);
+                        updateSignalDisplay(data.data.signal, 'TSLA', data.data.currentHeat, data.data.baseline);
                     } else {
                         throw new Error(data.error || 'Failed to fetch Tesla Market Heat');
                     }
@@ -1607,19 +1612,20 @@
                 
                 // Update Signal Section if signal data exists
                 if (heatData.signal) {
-                    updateSignalDisplay(heatData.signal, '', heatData.currentHeat);
+                    updateSignalDisplay(heatData.signal, '', heatData.currentHeat, heatData.baseline);
                 }
                 
                 console.log('🔥 Market Heat display updated');
             }
             
             // Update Buy/Sell Signal display (suffix lets this render Gold or S&P 500 cards)
-            function updateSignalDisplay(signalData, suffix = '', currentHeat = null) {
+            function updateSignalDisplay(signalData, suffix = '', currentHeat = null, baseline = null) {
                 const signalSection = document.getElementById('signalSection' + suffix);
                 const signalCard = document.getElementById('signalCard' + suffix);
                 const signalIconLarge = document.getElementById('signalIconLarge' + suffix);
                 const signalLabel = document.getElementById('signalLabel' + suffix);
                 const signalHeatValue = document.getElementById('signalHeatValue' + suffix);
+                const signalHeatRef = document.getElementById('signalHeatRef' + suffix);
                 const signalStrengthText = document.getElementById('signalStrengthText' + suffix);
                 const strengthFill = document.getElementById('strengthFill' + suffix);
                 const pulseIcon = document.getElementById('pulseIcon' + suffix);
@@ -1641,6 +1647,9 @@
                 // Update market heat value
                 if (signalHeatValue && currentHeat !== null) {
                     signalHeatValue.textContent = currentHeat.toFixed(1) + '°';
+                }
+                if (signalHeatRef && baseline !== null) {
+                    signalHeatRef.textContent = '(' + baseline.toFixed(1) + ')';
                 }
 
                 // Update strength

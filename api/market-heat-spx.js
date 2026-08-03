@@ -2,6 +2,17 @@
 // Same RSI/MACD/Pulse Speed logic as api/market-heat.js, applied to the S&P 500.
 // Data source: Yahoo Finance's public chart endpoint (no API key required) —
 // it only returns raw price history, so RSI/MACD/EMA are computed here in JS.
+//
+// The publicly displayed "Market Heat" value is a blended composite of RSI,
+// MACD strength and daily price momentum — not raw RSI — so it won't match
+// what a plain RSI(14) lookup on a charting site would show. The raw RSI is
+// still kept internally as `baseline` for reference only; it does not drive
+// any of the thresholds below.
+
+const RSI_WEIGHT = 0.6;
+const MACD_WEIGHT = 1.5;
+const PULSE_WEIGHT = 2;
+const PULSE_CLAMP = 5;
 
 function calculateRSISeries(values, period = 14) {
     const rsi = new Array(values.length).fill(null);
@@ -41,6 +52,31 @@ function calculateEMASeries(values, period) {
     }
 
     return ema;
+}
+
+// Blends RSI + signed MACD strength + signed daily price momentum into one
+// 0-100 score. Deliberately not a linear function of RSI alone.
+function calculateCompositeSeries(closeValues, rsiSeries, macdLine, signalLine) {
+    return closeValues.map((_, i) => {
+        const rsi = rsiSeries[i];
+        if (rsi === null) return null;
+
+        let macdSigned = 0;
+        if (macdLine[i] !== null && signalLine[i] !== null) {
+            const histogram = macdLine[i] - signalLine[i];
+            const strength = Math.min(Math.abs(histogram) * 2, 10);
+            macdSigned = macdLine[i] > signalLine[i] ? strength : -strength;
+        }
+
+        let pulseSigned = 0;
+        if (i > 0 && closeValues[i - 1]) {
+            pulseSigned = ((closeValues[i] - closeValues[i - 1]) / closeValues[i - 1]) * 100;
+            pulseSigned = Math.max(-PULSE_CLAMP, Math.min(PULSE_CLAMP, pulseSigned));
+        }
+
+        const composite = 50 + (rsi - 50) * RSI_WEIGHT + macdSigned * MACD_WEIGHT + pulseSigned * PULSE_WEIGHT;
+        return Math.max(0, Math.min(100, composite));
+    });
 }
 
 export default async function handler(req, res) {
@@ -98,7 +134,7 @@ export default async function handler(req, res) {
         const closeValues = series.map(p => p.close);
         const lastIdx = closeValues.length - 1;
 
-        // RSI (Market Heat)
+        // RSI (kept only as an internal baseline reference, not for thresholds)
         const rsiSeries = calculateRSISeries(closeValues, 14);
         const latestRSI = rsiSeries[lastIdx];
 
@@ -106,7 +142,7 @@ export default async function handler(req, res) {
             throw new Error('No Market Heat data available');
         }
 
-        // MACD (Trend Force): EMA12 - EMA26, signal = EMA9 of the MACD line
+        // MACD: EMA12 - EMA26, signal = EMA9 of the MACD line
         const ema12 = calculateEMASeries(closeValues, 12);
         const ema26 = calculateEMASeries(closeValues, 26);
         const macdLine = closeValues.map((_, i) =>
@@ -120,9 +156,12 @@ export default async function handler(req, res) {
 
         const latestMacd = macdLine[lastIdx];
         const latestSignal = signalLine[lastIdx];
-        const latestHistogram = (latestMacd !== null && latestSignal !== null) ? latestMacd - latestSignal : null;
 
-        // Calculate Pulse Speed (momentum speed)
+        // Composite Market Heat (RSI + MACD + Pulse blended into one score)
+        const compositeSeries = calculateCompositeSeries(closeValues, rsiSeries, macdLine, signalLine);
+        const latestHeat = compositeSeries[lastIdx];
+
+        // Calculate Pulse Speed (momentum speed) for display
         let pulseSpeed = 'Steady';
         let pulseIcon = '🚶';
         let pulseValue = 0;
@@ -149,21 +188,14 @@ export default async function handler(req, res) {
             }
         }
 
-        // Analyze MACD (Trend Force)
+        // Analyze MACD (Trend Force) for display
         let trendForce = 'Neutral';
-        let trendStrength = 0;
 
         if (latestMacd !== null && latestSignal !== null) {
-            if (latestMacd > latestSignal) {
-                trendForce = 'Bullish';
-                trendStrength = Math.min(Math.abs(latestHistogram) * 2, 10);
-            } else {
-                trendForce = 'Bearish';
-                trendStrength = Math.min(Math.abs(latestHistogram) * 2, 10);
-            }
+            trendForce = latestMacd > latestSignal ? 'Bullish' : 'Bearish';
         }
 
-        // Generate Buy/Sell Signal
+        // Generate Buy/Sell Signal (driven entirely by the composite Heat score)
         let signalType = 'HOLD';
         let signalColor = 'gray';
         let signalIcon = '⚪';
@@ -172,23 +204,23 @@ export default async function handler(req, res) {
         let supportingIndicators = [];
 
         // BUY Signal Logic
-        if (latestRSI < 40) {
+        if (latestHeat < 40) {
             signalType = 'ENTRY';
             signalColor = 'green';
             signalIcon = '🟢';
 
-            if (latestRSI < 10) {
+            if (latestHeat < 10) {
                 signalStrength = 10;
-                supportingIndicators.push('✅ Extreme Low Heat (' + latestRSI.toFixed(1) + '° - CRITICAL BUY ZONE)');
-            } else if (latestRSI < 20) {
+                supportingIndicators.push('✅ Extreme Low Heat (' + latestHeat.toFixed(1) + '° - CRITICAL BUY ZONE)');
+            } else if (latestHeat < 20) {
                 signalStrength = 8;
-                supportingIndicators.push('✅ Very Low Heat (' + latestRSI.toFixed(1) + '° - STRONG BUY)');
-            } else if (latestRSI < 30) {
+                supportingIndicators.push('✅ Very Low Heat (' + latestHeat.toFixed(1) + '° - STRONG BUY)');
+            } else if (latestHeat < 30) {
                 signalStrength = 6;
-                supportingIndicators.push('✅ Low Heat Zone (' + latestRSI.toFixed(1) + '° - BUY)');
+                supportingIndicators.push('✅ Low Heat Zone (' + latestHeat.toFixed(1) + '° - BUY)');
             } else {
                 signalStrength = 4;
-                supportingIndicators.push('✅ Cooling Heat (' + latestRSI.toFixed(1) + '° - CONSIDER BUY)');
+                supportingIndicators.push('✅ Cooling Heat (' + latestHeat.toFixed(1) + '° - CONSIDER BUY)');
             }
 
             if (trendForce === 'Bullish') {
@@ -205,23 +237,23 @@ export default async function handler(req, res) {
         }
 
         // SELL Signal Logic
-        else if (latestRSI > 60) {
+        else if (latestHeat > 60) {
             signalType = 'EXIT';
             signalColor = 'red';
             signalIcon = '🔴';
 
-            if (latestRSI > 90) {
+            if (latestHeat > 90) {
                 signalStrength = 10;
-                supportingIndicators.push('✅ Extreme High Heat (' + latestRSI.toFixed(1) + '° - CRITICAL SELL ZONE)');
-            } else if (latestRSI > 80) {
+                supportingIndicators.push('✅ Extreme High Heat (' + latestHeat.toFixed(1) + '° - CRITICAL SELL ZONE)');
+            } else if (latestHeat > 80) {
                 signalStrength = 8;
-                supportingIndicators.push('✅ Very High Heat (' + latestRSI.toFixed(1) + '° - STRONG SELL)');
-            } else if (latestRSI > 70) {
+                supportingIndicators.push('✅ Very High Heat (' + latestHeat.toFixed(1) + '° - STRONG SELL)');
+            } else if (latestHeat > 70) {
                 signalStrength = 6;
-                supportingIndicators.push('✅ High Heat Zone (' + latestRSI.toFixed(1) + '° - SELL)');
+                supportingIndicators.push('✅ High Heat Zone (' + latestHeat.toFixed(1) + '° - SELL)');
             } else {
                 signalStrength = 4;
-                supportingIndicators.push('✅ Rising Heat (' + latestRSI.toFixed(1) + '° - CONSIDER SELL)');
+                supportingIndicators.push('✅ Rising Heat (' + latestHeat.toFixed(1) + '° - CONSIDER SELL)');
             }
 
             if (trendForce === 'Bearish') {
@@ -243,13 +275,13 @@ export default async function handler(req, res) {
             signalColor = 'gray';
             signalIcon = '⚪';
 
-            // Scale strength/confidence by how close RSI is to the 40/60 edges,
+            // Scale strength/confidence by how close Heat is to the 40/60 edges,
             // instead of a flat value, so two neutral readings aren't identical
-            const distanceFromMid = Math.abs(latestRSI - 50); // 0 (at 50) to 10 (at 40 or 60)
+            const distanceFromMid = Math.abs(latestHeat - 50); // 0 (at 50) to 10 (at 40 or 60)
             signalStrength = Math.max(1, Math.min(3, Math.round(1 + distanceFromMid / 5)));
             confidence = Math.round(30 + distanceFromMid * 2);
 
-            supportingIndicators.push('ℹ️ Neutral Heat (' + latestRSI.toFixed(1) + '° - RANGE: 40-60°)');
+            supportingIndicators.push('ℹ️ Neutral Heat (' + latestHeat.toFixed(1) + '° - RANGE: 40-60°)');
             supportingIndicators.push('ℹ️ Wait for Market Heat < 40° (BUY) or > 60° (SELL)');
         }
 
@@ -260,13 +292,13 @@ export default async function handler(req, res) {
             return 'WEAK';
         };
 
-        // History (most recent first), used for overbought-cycle analysis + chart
+        // History (most recent first), driven by the composite score
         const historyPoints = [];
         for (let i = lastIdx; i >= 0 && historyPoints.length < 30; i--) {
-            if (rsiSeries[i] !== null) {
+            if (compositeSeries[i] !== null) {
                 historyPoints.push({
                     date: new Date(series[i].time * 1000).toISOString().split('T')[0],
-                    heat: rsiSeries[i]
+                    heat: compositeSeries[i]
                 });
             }
         }
@@ -288,7 +320,7 @@ export default async function handler(req, res) {
             }
         }
 
-        if (latestRSI > overboughtThreshold) {
+        if (latestHeat > overboughtThreshold) {
             if (overboughtCount >= 3) {
                 heatLevel = 3;
             } else if (overboughtCount >= 2) {
@@ -313,17 +345,18 @@ export default async function handler(req, res) {
 
         const heatAlert = getHeatAlert(heatLevel);
 
-        console.log(`✅ S&P 500 signals calculated: ${signalType} (Strength: ${signalStrength}/10, Heat: ${latestRSI.toFixed(1)})`);
+        console.log(`✅ S&P 500 signals calculated: ${signalType} (Strength: ${signalStrength}/10, Heat: ${latestHeat.toFixed(1)})`);
 
         res.status(200).json({
             success: true,
             data: {
-                currentHeat: latestRSI,
+                currentHeat: latestHeat,
+                baseline: parseFloat(latestRSI.toFixed(1)),
                 heatLevel: heatLevel,
                 peakCycles: overboughtCount,
                 maxCycles: 3,
                 alert: heatAlert,
-                isOverheated: latestRSI > overboughtThreshold,
+                isOverheated: latestHeat > overboughtThreshold,
 
                 signal: {
                     type: signalType,
