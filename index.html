@@ -548,13 +548,13 @@
 
         const ASSETS = [
             { key: 'GOLD', label: 'Gold', endpoint: '/api/market-heat' },
-            { key: 'SPX', label: 'S&P 500', endpoint: '/api/market-heat-spx' },
-            { key: 'BTC', label: 'Bitcoin', endpoint: '/api/market-heat-btc' },
-            { key: 'MSFT', label: 'Microsoft', endpoint: '/api/market-heat-msft' },
-            { key: 'TSLA', label: 'Tesla', endpoint: '/api/market-heat-tsla' },
-            { key: 'OIL', label: 'Crude Oil', endpoint: '/api/market-heat-oil' },
-            { key: 'NVDA', label: 'NVIDIA', endpoint: '/api/market-heat-nvda' },
-            { key: 'AAPL', label: 'Apple', endpoint: '/api/market-heat-aapl' }
+            { key: 'SPX', label: 'S&P 500', endpoint: '/api/market-heat-asset?asset=SPX' },
+            { key: 'BTC', label: 'Bitcoin', endpoint: '/api/market-heat-asset?asset=BTC' },
+            { key: 'MSFT', label: 'Microsoft', endpoint: '/api/market-heat-asset?asset=MSFT' },
+            { key: 'TSLA', label: 'Tesla', endpoint: '/api/market-heat-asset?asset=TSLA' },
+            { key: 'OIL', label: 'Crude Oil', endpoint: '/api/market-heat-asset?asset=OIL' },
+            { key: 'NVDA', label: 'NVIDIA', endpoint: '/api/market-heat-asset?asset=NVDA' },
+            { key: 'AAPL', label: 'Apple', endpoint: '/api/market-heat-asset?asset=AAPL' }
         ];
 
         const UPDATE_INTERVAL = 3600000; // 1 hour, matches the rest of the site

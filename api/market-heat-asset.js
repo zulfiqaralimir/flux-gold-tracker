@@ -1,7 +1,12 @@
-// Vercel Serverless Function to calculate Crude Oil Market Heat + Buy/Sell Signals
-// Same RSI/MACD/Pulse Speed logic as api/market-heat.js, applied to the Crude Oil.
-// Data source: Yahoo Finance's public chart endpoint (no API key required) —
-// it only returns raw price history, so RSI/MACD/EMA are computed here in JS.
+// Vercel Serverless Function to calculate Market Heat + Buy/Sell Signals
+// for any of the Yahoo-Finance-backed assets (everything except Gold, which
+// uses Twelve Data and lives in api/market-heat.js).
+//
+// Consolidated from separate per-asset files (market-heat-spx.js,
+// market-heat-btc.js, market-heat-msft.js, market-heat-tsla.js,
+// market-heat-oil.js, market-heat-nvda.js, market-heat-aapl.js) into one
+// parameterized function to stay under Vercel Hobby's 12-function limit.
+// Pass the asset via ?asset=<key>, e.g. /api/market-heat-asset?asset=TSLA.
 //
 // The publicly displayed "Market Heat" value is a blended composite of RSI,
 // MACD strength and daily price momentum — not raw RSI — so it won't match
@@ -13,6 +18,16 @@ const RSI_WEIGHT = 0.6;
 const MACD_WEIGHT = 1.5;
 const PULSE_WEIGHT = 2;
 const PULSE_CLAMP = 5;
+
+const TICKERS = {
+    SPX: { symbol: '%5EGSPC', name: 'S&P 500' },
+    BTC: { symbol: 'BTC-USD', name: 'Bitcoin' },
+    MSFT: { symbol: 'MSFT', name: 'Microsoft' },
+    TSLA: { symbol: 'TSLA', name: 'Tesla' },
+    OIL: { symbol: 'CL%3DF', name: 'Crude Oil' },
+    NVDA: { symbol: 'NVDA', name: 'NVIDIA' },
+    AAPL: { symbol: 'AAPL', name: 'Apple' }
+};
 
 function calculateRSISeries(values, period = 14) {
     const rsi = new Array(values.length).fill(null);
@@ -99,10 +114,23 @@ export default async function handler(req, res) {
         return;
     }
 
-    try {
-        console.log('📊 Fetching Crude Oil market data from Yahoo Finance...');
+    const assetKey = String(req.query.asset || '').toUpperCase();
+    const ticker = TICKERS[assetKey];
 
-        const chartUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/CL%3DF?interval=1d&range=6mo';
+    if (!ticker) {
+        res.status(400).json({
+            success: false,
+            error: `Unknown asset "${req.query.asset || ''}". Valid values: ${Object.keys(TICKERS).join(', ')}`
+        });
+        return;
+    }
+
+    const { symbol, name } = ticker;
+
+    try {
+        console.log(`📊 Fetching ${name} market data from Yahoo Finance...`);
+
+        const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=6mo`;
         const chartResponse = await fetch(chartUrl, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         });
@@ -116,7 +144,7 @@ export default async function handler(req, res) {
 
         if (!result) {
             const message = chartData.chart && chartData.chart.error && chartData.chart.error.description;
-            throw new Error(message || 'No Crude Oil data available');
+            throw new Error(message || `No ${name} data available`);
         }
 
         const timestamps = result.timestamp || [];
@@ -128,7 +156,7 @@ export default async function handler(req, res) {
             .filter(p => p.close !== null && p.close !== undefined);
 
         if (series.length < 35) {
-            throw new Error('Not enough Crude Oil history to calculate indicators');
+            throw new Error(`Not enough ${name} history to calculate indicators`);
         }
 
         const closeValues = series.map(p => p.close);
@@ -370,7 +398,7 @@ export default async function handler(req, res) {
 
         const heatAlert = getHeatAlert(heatLevel);
 
-        console.log(`✅ Crude Oil signals calculated: ${signalType} (Strength: ${signalStrength}/10, Heat: ${latestHeat.toFixed(1)})`);
+        console.log(`✅ ${name} signals calculated: ${signalType} (Strength: ${signalStrength}/10, Heat: ${latestHeat.toFixed(1)})`);
 
         res.status(200).json({
             success: true,
@@ -407,11 +435,11 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error('❌ Error calculating Crude Oil signals:', error);
+        console.error(`❌ Error calculating ${name} signals:`, error);
 
         res.status(500).json({
             success: false,
-            error: 'Failed to calculate Crude Oil market signals. Please try again later.'
+            error: `Failed to calculate ${name} market signals. Please try again later.`
         });
     }
 }
