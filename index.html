@@ -332,6 +332,28 @@
             return el;
         }
 
+        // Idle needle tremor, like an analog gauge that never sits perfectly
+        // still. One shared rAF loop drives every registered gauge so we
+        // don't spin up a separate loop per gauge; each gets its own slight
+        // phase offset so the two needles don't move in lockstep.
+        const JITTER_AMPLITUDE_DEG = 2.5;
+        const JITTER_PERIOD_MS = 3200; // slow, visible sway
+        const jitterGroups = [];
+
+        function registerNeedleJitter(el) {
+            jitterGroups.push(el);
+        }
+
+        function runJitterLoop(timestamp) {
+            jitterGroups.forEach((el, i) => {
+                const phase = i * 2.1;
+                const angle = Math.sin((timestamp / JITTER_PERIOD_MS) * 2 * Math.PI + phase) * JITTER_AMPLITUDE_DEG;
+                el.style.transform = `rotate(${angle.toFixed(2)}deg)`;
+            });
+            requestAnimationFrame(runJitterLoop);
+        }
+        requestAnimationFrame(runJitterLoop);
+
         // order: array of 4 state keys, states: { key: { label, icon, color, angle } }
         function createGauge(mountEl, order, states) {
             const svg = svgEl('svg', {
@@ -361,15 +383,25 @@
             });
 
             // Needle: drawn pointing at angle 0 (left) by default, then rotated.
+            // The state angle (smooth CSS transition) and the idle tremor
+            // (continuous rAF loop) are applied on two separate nested groups
+            // so they don't fight over the same `transform` property.
             const needleGroup = svgEl('g', { class: 'gauge-needle' });
             needleGroup.style.transformBox = 'view-box';
             needleGroup.style.transformOrigin = `${CX}px ${CY}px`;
+
+            const jitterGroup = svgEl('g', { class: 'gauge-needle-jitter' });
+            jitterGroup.style.transformBox = 'view-box';
+            jitterGroup.style.transformOrigin = `${CX}px ${CY}px`;
+
             const needle = svgEl('polygon', {
                 points: `${CX - NEEDLE_LEN},${CY} ${CX},${CY - 5} ${CX},${CY + 5}`,
                 fill: states[order[0]].color
             });
-            needleGroup.appendChild(needle);
+            jitterGroup.appendChild(needle);
+            needleGroup.appendChild(jitterGroup);
             svg.appendChild(needleGroup);
+            registerNeedleJitter(jitterGroup);
 
             const hub = svgEl('circle', { cx: CX, cy: CY, r: 10, class: 'gauge-hub' });
             svg.appendChild(hub);
