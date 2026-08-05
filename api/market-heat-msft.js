@@ -165,11 +165,14 @@ export default async function handler(req, res) {
         let pulseSpeed = 'Steady';
         let pulseIcon = '🚶';
         let pulseValue = 0;
+        let priceChangePercent = 0;
 
         if (closeValues.length >= 2) {
             const latestPrice = closeValues[lastIdx];
             const previousPrice = closeValues[lastIdx - 1];
             const priceChange = ((latestPrice - previousPrice) / previousPrice) * 100;
+
+            priceChangePercent = priceChange;
 
             pulseValue = Math.abs(priceChange);
 
@@ -373,6 +376,8 @@ export default async function handler(req, res) {
             success: true,
             data: {
                 currentHeat: latestHeat,
+                price: closeValues[lastIdx],
+                priceChangePercent: priceChangePercent,
                 baseline: parseFloat(latestRSI.toFixed(1)),
                 heatLevel: heatLevel,
                 peakCycles: overboughtCount,

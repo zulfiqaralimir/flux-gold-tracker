@@ -36,6 +36,58 @@
             z-index: 0;
         }
 
+        /* Price ticker */
+        .ticker-bar {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            overflow: hidden;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-soft);
+            padding: 10px 0;
+        }
+
+        .ticker-track {
+            display: flex;
+            width: max-content;
+            gap: 60px;
+            padding-left: 60px;
+            animation: ticker-scroll 30s linear infinite;
+        }
+
+        .ticker-item {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+
+        .ticker-symbol {
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .ticker-price {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--text-primary);
+        }
+
+        .ticker-change {
+            font-weight: 700;
+        }
+
+        .ticker-change.up { color: #22C55E; }
+        .ticker-change.down { color: #EF4444; }
+
+        /* Track is rendered twice back-to-back so the loop point is seamless;
+           translate exactly one copy's width (50%) to the left. */
+        @keyframes ticker-scroll {
+            from { transform: translateX(-50%); }
+            to { transform: translateX(0%); }
+        }
+
         .container {
             max-width: 1100px;
             margin: 0 auto;
@@ -256,6 +308,10 @@
     </style>
 </head>
 <body>
+    <div class="ticker-bar">
+        <div class="ticker-track" id="tickerTrack"></div>
+    </div>
+
     <div class="container">
         <header>
             <h1 class="logo">ZulfiQode - FLUX</h1>
@@ -545,6 +601,8 @@
                     heat: heat,
                     exitState: heatToExitState(heat),
                     entryState: heatToEntryState(heat),
+                    price: json.data.price,
+                    priceChangePercent: json.data.priceChangePercent,
                     updatedAt: new Date()
                 };
             } catch (error) {
@@ -552,14 +610,49 @@
             }
 
             if (asset.key === activeAssetKey) renderActiveAsset();
+            renderTicker();
         }
 
         function fetchAll() {
             ASSETS.forEach(fetchAsset);
         }
 
+        function formatPrice(price) {
+            if (typeof price !== 'number' || isNaN(price)) return '—';
+            const decimals = price >= 1000 ? 2 : price >= 1 ? 2 : 4;
+            return '$' + price.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+        }
+
+        function tickerItemHTML(asset) {
+            const entry = cache[asset.key];
+            if (!entry || entry.price == null) {
+                return `<div class="ticker-item"><span class="ticker-symbol">${asset.key}</span><span class="ticker-price">—</span></div>`;
+            }
+
+            const change = entry.priceChangePercent || 0;
+            const isUp = change >= 0;
+            const arrow = isUp ? '▲' : '▼';
+            const changeClass = isUp ? 'up' : 'down';
+
+            return `
+                <div class="ticker-item">
+                    <span class="ticker-symbol">${asset.key}</span>
+                    <span class="ticker-price">${formatPrice(entry.price)}</span>
+                    <span class="ticker-change ${changeClass}">${arrow} ${Math.abs(change).toFixed(2)}%</span>
+                </div>
+            `;
+        }
+
+        function renderTicker() {
+            const track = document.getElementById('tickerTrack');
+            const itemsHTML = ASSETS.map(tickerItemHTML).join('');
+            // Rendered twice back-to-back so the CSS animation loop is seamless.
+            track.innerHTML = itemsHTML + itemsHTML;
+        }
+
         renderTabs();
         renderActiveAsset();
+        renderTicker();
         fetchAll();
         setInterval(fetchAll, UPDATE_INTERVAL);
     })();
