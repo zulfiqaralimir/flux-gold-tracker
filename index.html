@@ -97,8 +97,17 @@
         }
 
         header {
+            position: relative;
             text-align: center;
             padding: 30px 20px 20px;
+        }
+
+        #polaris {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
         }
 
         .logo {
@@ -314,6 +323,7 @@
 
     <div class="container">
         <header>
+            <canvas id="polaris" aria-hidden="true"></canvas>
             <h1 class="logo">ZulfiQode - FLUX</h1>
             <p class="tagline">Signal Terminal</p>
         </header>
@@ -655,6 +665,76 @@
         renderTicker();
         fetchAll();
         setInterval(fetchAll, UPDATE_INTERVAL);
+    })();
+    </script>
+
+    <script>
+    (function () {
+        const canvas = document.getElementById('polaris');
+        const ctx = canvas.getContext('2d');
+        let t = 0;
+
+        function resize() {
+            canvas.width = canvas.offsetWidth || canvas.parentElement.offsetWidth;
+            canvas.height = canvas.offsetHeight || canvas.parentElement.offsetHeight;
+        }
+
+        function drawStar() {
+            const W = canvas.width, H = canvas.height;
+            ctx.clearRect(0, 0, W, H);
+
+            // Position: top-right corner, with margin so rays don't clip
+            const s = { x: W * 0.85, y: H * 0.12, r: 5.2 };
+
+            // Twinkle brightness pulse
+            const tw = 0.82 + Math.sin(t * 0.028) * 0.18;
+
+            ctx.save();
+
+            // 8-spike cross rays
+            for (let sp = 0; sp < 8; sp++) {
+                const ang = sp * Math.PI / 4 + Math.sin(t * 0.012) * 0.04;
+                const slen = sp % 2 === 0 ? 32 : 16;
+                const sa = (sp % 2 === 0 ? 0.75 : 0.42) * tw;
+                const sg = ctx.createLinearGradient(s.x, s.y, s.x + Math.cos(ang) * slen, s.y + Math.sin(ang) * slen);
+                sg.addColorStop(0, `rgba(255,240,160,${sa})`);
+                sg.addColorStop(1, 'rgba(255,240,160,0)');
+                ctx.beginPath();
+                ctx.moveTo(s.x, s.y);
+                ctx.lineTo(s.x + Math.cos(ang) * slen, s.y + Math.sin(ang) * slen);
+                ctx.strokeStyle = sg;
+                ctx.lineWidth = sp % 2 === 0 ? 2.2 : 1.1;
+                ctx.stroke();
+            }
+
+            // Soft glow halo
+            const hg = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, 26);
+            hg.addColorStop(0, `rgba(255,235,140,${0.55 * tw})`);
+            hg.addColorStop(0.4, `rgba(255,220,100,${0.18 * tw})`);
+            hg.addColorStop(1, 'rgba(255,200,80,0)');
+            ctx.fillStyle = hg;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, 26, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Solid core
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r * tw, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,252,230,${0.97 * tw})`;
+            ctx.fill();
+
+            ctx.restore();
+            t++;
+        }
+
+        function loop() {
+            drawStar();
+            requestAnimationFrame(loop);
+        }
+
+        resize();
+        loop();
+        window.addEventListener('resize', resize);
     })();
     </script>
 </body>
