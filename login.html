@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZulfiQode - FLUX | Sign In</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold-primary: #FFD700;
+            --gold-dark: #B8860B;
+            --bg-dark: #0A0A0A;
+            --bg-card: #1A1A1A;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --accent-red: #FF3366;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Mono', monospace;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+            background: var(--bg-card);
+            border: 2px solid var(--gold-dark);
+            padding: 40px 30px;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--gold-primary);
+            letter-spacing: 4px;
+            text-align: center;
+        }
+
+        .tagline {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 8px;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            background: rgba(255, 215, 0, 0.05);
+            border: 2px solid var(--gold-dark);
+            color: var(--text-primary);
+            padding: 12px 14px;
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+
+        input[type="password"]:focus {
+            outline: none;
+            border-color: var(--gold-primary);
+        }
+
+        button {
+            width: 100%;
+            background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-primary) 100%);
+            color: var(--bg-dark);
+            border: none;
+            padding: 14px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: filter 0.2s ease;
+        }
+
+        button:hover { filter: brightness(1.1); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .error-message {
+            color: var(--accent-red);
+            font-size: 0.8rem;
+            margin-top: 16px;
+            text-align: center;
+            min-height: 1em;
+        }
+    </style>
+</head>
+<body>
+    <form class="login-card" id="loginForm" autocomplete="off">
+        <div class="logo">ZulfiQode - FLUX</div>
+        <div class="tagline">Internal Access</div>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autofocus required>
+
+        <button type="submit" id="submitBtn">Sign In</button>
+        <div class="error-message" id="errorMessage"></div>
+    </form>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            errorMessage.textContent = '';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing In...';
+
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    errorMessage.textContent = data.error || 'Invalid password';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Connection error. Please try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+            }
+        });
+    </script>
+</body>
+</html>

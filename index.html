@@ -3,1778 +3,528 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZulfiQode - FLUX | Gold Analyzer (LIVE API)</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <title>ZulfiQode - FLUX | Signal Terminal</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --gold-primary: #FFD700;
-            --gold-dark: #B8860B;
-            --gold-light: #FFF4CC;
-            --bg-dark: #0A0A0A;
-            --bg-card: #1A1A1A;
-            --text-primary: #FFFFFF;
-            --text-secondary: #A0A0A0;
-            --accent-green: #00FF88;
-            --accent-red: #FF3366;
+            --bg-dark: #08090C;
+            --bg-panel: #12141A;
+            --bg-panel-2: #171A21;
+            --border-soft: #262b36;
+            --text-primary: #F3F4F6;
+            --text-secondary: #8B93A7;
+            --accent-gold: #FFD700;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Space Mono', monospace;
             background: var(--bg-dark);
             color: var(--text-primary);
-            overflow-x: hidden;
+            min-height: 100vh;
         }
 
         body::before {
             content: '';
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(184, 134, 11, 0.1) 0%, transparent 50%);
-            animation: pulse 8s ease-in-out infinite;
+            inset: 0;
+            background:
+                radial-gradient(circle at 15% 10%, rgba(255, 215, 0, 0.06) 0%, transparent 45%),
+                radial-gradient(circle at 85% 90%, rgba(34, 197, 94, 0.05) 0%, transparent 45%);
             pointer-events: none;
             z-index: 0;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.6; }
-        }
-
         .container {
-            max-width: 1400px;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 30px 20px 60px;
             position: relative;
             z-index: 1;
         }
 
         header {
             text-align: center;
-            padding: 60px 20px 40px;
-            border-bottom: 2px solid var(--gold-primary);
-            position: relative;
-            animation: slideDown 0.8s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            padding: 30px 20px 20px;
         }
 
         .logo {
             font-family: 'Orbitron', sans-serif;
-            font-size: 4rem;
+            font-size: 2.4rem;
             font-weight: 900;
-            background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 50%, var(--gold-primary) 100%);
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #fff7cc 50%, var(--accent-gold) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            letter-spacing: 8px;
-            animation: shimmer 3s ease-in-out infinite;
-        }
-
-        @keyframes shimmer {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.3); }
+            letter-spacing: 6px;
         }
 
         .tagline {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-top: 10px;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-        }
-
-        .api-badge {
-            display: inline-block;
-            background: rgba(0, 255, 136, 0.2);
-            color: var(--accent-green);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            margin-top: 10px;
-            letter-spacing: 2px;
-        }
-
-        /* Market Heat Alert Banner */
-        .heat-alert-banner {
-            background: var(--bg-card);
-            border: 2px solid var(--gold-dark);
-            padding: 20px 30px;
-            margin: 30px 0;
-            border-radius: 8px;
-            animation: fadeIn 1s ease-out 0.2s both;
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .heat-alert-banner:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(255, 215, 0, 0.2);
-        }
-
-        .heat-alert-banner.level-1 {
-            border-left: 6px solid var(--accent-green);
-            background: linear-gradient(90deg, rgba(0, 255, 136, 0.1) 0%, var(--bg-card) 100%);
-        }
-
-        .heat-alert-banner.level-2 {
-            border-left: 6px solid #FFA500;
-            background: linear-gradient(90deg, rgba(255, 165, 0, 0.1) 0%, var(--bg-card) 100%);
-        }
-
-        .heat-alert-banner.level-3 {
-            border-left: 6px solid var(--accent-red);
-            background: linear-gradient(90deg, rgba(255, 51, 102, 0.1) 0%, var(--bg-card) 100%);
-        }
-
-        .heat-alert-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .heat-alert-main {
-            flex: 1;
-            min-width: 250px;
-        }
-
-        .heat-alert-icon {
-            font-size: 2rem;
-            margin-right: 15px;
-            vertical-align: middle;
-        }
-
-        .heat-alert-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.3rem;
-            color: var(--gold-primary);
-            display: inline;
-            vertical-align: middle;
-        }
-
-        .heat-alert-details {
-            display: flex;
-            gap: 30px;
-            margin-top: 12px;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .heat-value {
-            color: var(--gold-primary);
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .heat-gauge-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .heat-gauge {
-            width: 150px;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .heat-gauge-fill {
-            height: 100%;
-            transition: width 0.5s ease, background-color 0.5s ease;
-            border-radius: 10px;
-        }
-
-        .heat-gauge-fill.level-1 {
-            background: linear-gradient(90deg, var(--accent-green) 0%, #00CC00 100%);
-        }
-
-        .heat-gauge-fill.level-2 {
-            background: linear-gradient(90deg, #FFA500 0%, #FF8C00 100%);
-        }
-
-        .heat-gauge-fill.level-3 {
-            background: linear-gradient(90deg, var(--accent-red) 0%, #CC0000 100%);
-        }
-
-        .heat-cycles {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            color: var(--gold-primary);
-        }
-
-        .heat-chart-section {
-            background: var(--bg-card);
-            border: 2px solid var(--gold-dark);
-            padding: 40px;
-            margin: 40px 0;
-            animation: fadeIn 1s ease-out 1.5s both;
-        }
-
-        /* Buy/Sell Signal Section */
-        .signal-section {
-            background: var(--bg-card);
-            border: 2px solid var(--gold-dark);
-            padding: 40px;
-            margin: 40px 0;
-            animation: fadeIn 1s ease-out 0.8s both;
-        }
-
-        .signal-header {
-            margin-bottom: 30px;
-        }
-
-        .signal-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            color: var(--gold-primary);
-            letter-spacing: 2px;
-        }
-
-        .signal-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        .signal-card {
-            background: rgba(255, 215, 0, 0.05);
-            border: 2px solid var(--gold-dark);
-            padding: 30px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .signal-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.3);
-        }
-
-        .signal-card.entry {
-            border-left: 6px solid var(--accent-green);
-            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
-        }
-
-        .signal-card.exit {
-            border-left: 6px solid var(--accent-red);
-            background: linear-gradient(135deg, rgba(255, 51, 102, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
-        }
-
-        .signal-card.hold {
-            border-left: 6px solid var(--text-secondary);
-            background: linear-gradient(135deg, rgba(160, 160, 160, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
-        }
-
-        .signal-type {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .signal-icon-large {
-            font-size: 3rem;
-        }
-
-        .signal-label {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-        }
-
-        .signal-label.entry {
-            color: var(--accent-green);
-        }
-
-        .signal-label.exit {
-            color: var(--accent-red);
-        }
-
-        .signal-label.hold {
-            color: var(--text-secondary);
-        }
-
-        .signal-details {
-            margin-top: 20px;
-        }
-
-        .signal-detail-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.1);
-        }
-
-        .signal-detail-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .signal-detail-value {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.1rem;
-            color: var(--gold-primary);
-            font-weight: 700;
-        }
-
-        .strength-meter {
-            width: 100%;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-
-        .strength-fill {
-            height: 100%;
-            transition: width 0.5s ease;
-            border-radius: 10px;
-        }
-
-        .strength-fill.entry {
-            background: linear-gradient(90deg, var(--accent-green) 0%, #00CC00 100%);
-        }
-
-        .strength-fill.exit {
-            background: linear-gradient(90deg, var(--accent-red) 0%, #CC0000 100%);
-        }
-
-        .strength-fill.hold {
-            background: linear-gradient(90deg, var(--text-secondary) 0%, #808080 100%);
-        }
-
-        .pulse-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 20px;
-            font-weight: 700;
-        }
-
-        .pulse-icon {
-            font-size: 1.5rem;
-        }
-
-        .confidence-badge {
-            display: inline-block;
-            padding: 10px 20px;
-            background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-primary) 100%);
-            color: var(--bg-dark);
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 1.2rem;
-            border-radius: 25px;
-            letter-spacing: 1px;
-        }
-
-        .live-price-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin: 40px 0;
-            animation: fadeIn 1s ease-out 0.3s both;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .price-card {
-            background: var(--bg-card);
-            border: 2px solid var(--gold-dark);
-            padding: 30px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .price-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
-            transition: left 0.5s;
-        }
-
-        .price-card:hover::before {
-            left: 100%;
-        }
-
-        .price-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.3);
-            border-color: var(--gold-primary);
-        }
-
-        .price-label {
             font-size: 0.8rem;
             color: var(--text-secondary);
+            margin-top: 8px;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
         }
 
-        .price-value {
+        /* Asset tabs */
+        .asset-tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 30px 0 10px;
+        }
+
+        .asset-tab {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-soft);
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.25s ease;
+        }
+
+        .asset-tab:hover {
+            color: var(--text-primary);
+            border-color: var(--accent-gold);
+        }
+
+        .asset-tab.active {
+            color: var(--bg-dark);
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+        }
+
+        /* Gauge grid */
+        .gauge-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 720px) {
+            .gauge-grid { grid-template-columns: 1fr; }
+        }
+
+        .gauge-panel {
+            background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-2) 100%);
+            border: 1px solid var(--border-soft);
+            border-radius: 16px;
+            padding: 26px 20px 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gauge-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3rem;
-            font-weight: 700;
-            color: var(--gold-primary);
-            margin: 10px 0;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            color: var(--text-primary);
+            margin-bottom: 6px;
         }
 
-        .price-change {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-weight: 700;
-            margin-top: 10px;
-        }
-
-        .price-change.positive {
-            background: rgba(0, 255, 136, 0.2);
-            color: var(--accent-green);
-        }
-
-        .price-change.negative {
-            background: rgba(255, 51, 102, 0.2);
-            color: var(--accent-red);
-        }
-
-        .last-updated {
+        .gauge-subtitle {
             font-size: 0.7rem;
             color: var(--text-secondary);
-            margin-top: 15px;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
         }
 
-        .chart-section {
-            background: var(--bg-card);
-            border: 2px solid var(--gold-dark);
-            padding: 40px;
-            margin: 40px 0;
-            animation: fadeIn 1s ease-out 0.6s both;
+        .gauge-svg-wrap {
+            width: 100%;
+            max-width: 280px;
+            filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.5));
         }
 
-        .chart-header {
+        .gauge-svg-wrap svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .gauge-band {
+            transition: filter 0.4s ease, opacity 0.4s ease;
+            opacity: 0.55;
+        }
+
+        .gauge-band.active-band {
+            opacity: 1;
+        }
+
+        .gauge-needle {
+            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+            transform-origin: center;
+        }
+
+        .gauge-hub {
+            fill: #1c1f27;
+            stroke: #3a3f4c;
+            stroke-width: 2;
+        }
+
+        .gauge-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            fill: var(--text-secondary);
+        }
+
+        /* Status card */
+        .status-card {
+            margin-top: 14px;
+            padding: 10px 22px;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-soft);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: box-shadow 0.4s ease, border-color 0.4s ease, color 0.4s ease;
+        }
+
+        .status-icon {
+            font-size: 1.1rem;
+        }
+
+        /* Current signal summary */
+        .signal-summary {
+            margin-top: 32px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-soft);
+            border-radius: 12px;
+            padding: 22px 26px;
+        }
+
+        .signal-summary-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .signal-summary-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 20px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 0.9rem;
         }
 
-        .chart-title {
+        .signal-summary-row:last-child { border-bottom: none; }
+
+        .signal-summary-label { color: var(--text-secondary); }
+
+        .signal-summary-value {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            color: var(--gold-primary);
-            letter-spacing: 2px;
-        }
-
-        .time-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .time-btn {
-            background: transparent;
-            border: 2px solid var(--gold-dark);
-            color: var(--text-primary);
-            padding: 10px 20px;
-            cursor: pointer;
-            font-family: 'Space Mono', monospace;
             font-weight: 700;
-            text-transform: uppercase;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
         }
 
-        .time-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: var(--gold-primary);
-            transition: left 0.3s;
-            z-index: -1;
-        }
-
-        .time-btn:hover::before,
-        .time-btn.active::before {
-            left: 0;
-        }
-
-        .time-btn:hover,
-        .time-btn.active {
-            color: var(--bg-dark);
-            border-color: var(--gold-primary);
-        }
-
-        .chart-container {
-            position: relative;
-            height: 400px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 40px 0;
-            animation: fadeIn 1s ease-out 0.9s both;
-        }
-
-        .stat-box {
-            background: var(--bg-card);
-            border-left: 4px solid var(--gold-primary);
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .stat-box:hover {
-            background: rgba(255, 215, 0, 0.1);
-            transform: translateX(5px);
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
+        .last-updated-note {
+            margin-top: 14px;
+            font-size: 0.7rem;
             color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .stat-value {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            color: var(--gold-primary);
-            margin-top: 8px;
+            text-align: right;
         }
 
         footer {
             text-align: center;
-            padding: 40px 20px;
-            border-top: 2px solid var(--gold-dark);
-            margin-top: 60px;
+            padding: 40px 20px 10px;
             color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10, 10, 10, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.5s;
-        }
-
-        .loading-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .loader {
-            width: 50px;
-            height: 50px;
-            border: 5px solid var(--gold-dark);
-            border-top: 5px solid var(--gold-primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* News Section */
-        .news-section {
-            background: var(--bg-card);
-            border: 2px solid var(--gold-dark);
-            padding: 40px;
-            margin: 40px 0;
-            animation: fadeIn 1s ease-out 1.2s both;
-        }
-
-        .news-header {
-            margin-bottom: 30px;
-        }
-
-        .news-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            color: var(--gold-primary);
-            letter-spacing: 2px;
-        }
-
-        .news-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .news-card {
-            background: rgba(255, 215, 0, 0.05);
-            border-left: 3px solid var(--gold-primary);
-            padding: 20px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .news-card:hover {
-            background: rgba(255, 215, 0, 0.1);
-            transform: translateX(5px);
-            border-left-width: 5px;
-        }
-
-        .news-source {
             font-size: 0.7rem;
-            color: var(--accent-green);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-
-        .news-headline {
-            color: var(--text-primary);
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-
-        .news-description {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin-bottom: 12px;
-        }
-
-        .news-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-        }
-
-        .news-time {
-            color: var(--gold-dark);
-        }
-
-        .news-link {
-            color: var(--gold-primary);
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .news-link:hover {
-            color: var(--gold-light);
-        }
-
-        .news-placeholder {
-            text-align: center;
-            color: var(--text-secondary);
-            padding: 40px;
-            font-size: 1.1rem;
-        }
-
-        .forecast-status {
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding: 3px 8px;
-            border-radius: 3px;
-        }
-
-        .forecast-status.pending {
-            color: var(--gold-primary);
-            background: rgba(255, 215, 0, 0.12);
-            border: 1px solid var(--gold-dark);
-        }
-
-        .forecast-status.confirmed {
-            color: var(--accent-green);
-            background: rgba(0, 255, 136, 0.12);
-            border: 1px solid var(--accent-green);
-        }
-
-        .forecast-status.missed {
-            color: var(--accent-red, #FF3366);
-            background: rgba(255, 51, 102, 0.12);
-            border: 1px solid var(--accent-red, #FF3366);
-        }
-
-        .forecast-status.commentary {
-            color: var(--text-secondary);
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid var(--text-secondary);
-        }
-
-        @media (max-width: 768px) {
-            .logo {
-                font-size: 2.5rem;
-                letter-spacing: 4px;
-            }
-
-            .price-value {
-                font-size: 2rem;
-            }
-
-            .chart-container {
-                height: 300px;
-            }
-
-            .chart-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loader"></div>
-    </div>
-
     <div class="container">
         <header>
             <h1 class="logo">ZulfiQode - FLUX</h1>
-            <p class="tagline">Gold Analyzer</p>
-            <p class="hypothetical-note" style="font-size:0.75rem;opacity:0.7;font-style:italic;">Hypothetical scenario: an indicator that would flag a 2026 gold blow-off top at $5590 and crash to $3942, in the style of a track record that includes predicting the 2008 Global Financial Crisis in late 2005 — illustrative only, not a real backtested result.</p>
-            <div class="api-badge">🔴 LIVE DATA</div>
+            <p class="tagline">Signal Terminal</p>
         </header>
 
-        <!-- Market Heat Alert Banner -->
-        <div class="heat-alert-banner" id="heatAlertBanner" style="display: none;">
-            <div class="heat-alert-content">
-                <div class="heat-alert-main">
-                    <span class="heat-alert-icon" id="heatAlertIcon">🟢</span>
-                    <h2 class="heat-alert-title" id="heatAlertTitle">Loading Market Heat...</h2>
-                    <div class="heat-alert-details">
-                        <div>
-                            <span style="color: var(--text-secondary);">Current Heat:</span>
-                            <span class="heat-value" id="heatValue">--</span>
-                        </div>
-                        <div>
-                            <span style="color: var(--text-secondary);">Peak Cycles:</span>
-                            <span class="heat-cycles" id="heatCycles">•</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="heat-gauge-container">
-                    <div class="heat-gauge">
-                        <div class="heat-gauge-fill" id="heatGaugeFill" style="width: 0%"></div>
-                    </div>
+        <div class="asset-tabs" id="assetTabs"></div>
+
+        <div class="gauge-grid">
+            <div class="gauge-panel">
+                <div class="gauge-title">EXIT CALL</div>
+                <div class="gauge-subtitle">Position Exhaustion</div>
+                <div class="gauge-svg-wrap" id="exitGaugeMount"></div>
+                <div class="status-card" id="exitStatusCard">
+                    <span class="status-icon" id="exitStatusIcon">⚪</span>
+                    <span id="exitStatusLabel">Loading...</span>
                 </div>
             </div>
-        </div>
 
-        <!-- Buy/Sell Signal Section -->
-        <div class="signal-section" id="signalSection" style="display: none;">
-            <div class="signal-header">
-                <h2 class="signal-title">⚡ Trading Sent Analysis</h2>
-            </div>
-            <div class="signal-grid">
-                <div class="signal-card" id="signalCard">
-                    <div class="signal-type">
-                        <span class="signal-icon-large" id="signalIconLarge">⚪</span>
-                        <div>
-                            <div class="signal-label" id="signalLabel">LOADING...</div>
-                        </div>
-                    </div>
-                    
-                    <div class="signal-details">
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Market Heat</span>
-                            <span class="signal-detail-value" id="signalHeatValue">--°</span>
-                            <span id="signalHeatRef" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Sent Strength</span>
-                            <span class="signal-detail-value" id="signalStrengthText">--/10</span>
-                            <span id="signalStrengthRef" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="strength-meter">
-                            <div class="strength-fill" id="strengthFill" style="width: 0%"></div>
-                        </div>
-
-                        <div class="signal-detail-row" style="margin-top: 20px;">
-                            <span class="signal-detail-label">Pulse Speed</span>
-                            <div class="pulse-indicator" id="pulseIndicator">
-                                <span class="pulse-icon" id="pulseIcon">🚶</span>
-                                <span id="pulseSpeed">Steady</span>
-                                <span id="pulseSpeedRef" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                            </div>
-                        </div>
-
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Confidence Level</span>
-                            <span class="confidence-badge" id="confidenceBadge">--%</span>
-                            <span id="confidenceRef" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        
-                    </div>
+            <div class="gauge-panel">
+                <div class="gauge-title">ENTRY CALL</div>
+                <div class="gauge-subtitle">Opportunity Building</div>
+                <div class="gauge-svg-wrap" id="entryGaugeMount"></div>
+                <div class="status-card" id="entryStatusCard">
+                    <span class="status-icon" id="entryStatusIcon">⚪</span>
+                    <span id="entryStatusLabel">Loading...</span>
                 </div>
             </div>
         </div>
 
-        <!-- S&P 500 Buy/Sell Signal Section (same RSI/MACD/Pulse Speed logic as Gold) -->
-        <div class="signal-section" id="signalSectionSPX" style="display: none;">
-            <div class="signal-header">
-                <h2 class="signal-title">⚡ S&amp;P 500 Trading Sent Analysis</h2>
+        <div class="signal-summary">
+            <div class="signal-summary-title">Current Signal — <span id="summaryAssetName">Gold</span></div>
+            <div class="signal-summary-row">
+                <span class="signal-summary-label">Exit Call</span>
+                <span class="signal-summary-value" id="summaryExitValue">--</span>
             </div>
-            <div class="signal-grid">
-                <div class="signal-card" id="signalCardSPX">
-                    <div class="signal-type">
-                        <span class="signal-icon-large" id="signalIconLargeSPX">⚪</span>
-                        <div>
-                            <div class="signal-label" id="signalLabelSPX">LOADING...</div>
-                        </div>
-                    </div>
-
-                    <div class="signal-details">
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Market Heat</span>
-                            <span class="signal-detail-value" id="signalHeatValueSPX">--°</span>
-                            <span id="signalHeatRefSPX" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Sent Strength</span>
-                            <span class="signal-detail-value" id="signalStrengthTextSPX">--/10</span>
-                            <span id="signalStrengthRefSPX" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="strength-meter">
-                            <div class="strength-fill" id="strengthFillSPX" style="width: 0%"></div>
-                        </div>
-
-                        <div class="signal-detail-row" style="margin-top: 20px;">
-                            <span class="signal-detail-label">Pulse Speed</span>
-                            <div class="pulse-indicator" id="pulseIndicatorSPX">
-                                <span class="pulse-icon" id="pulseIconSPX">🚶</span>
-                                <span id="pulseSpeedSPX">Steady</span>
-                                <span id="pulseSpeedRefSPX" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                            </div>
-                        </div>
-
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Confidence Level</span>
-                            <span class="confidence-badge" id="confidenceBadgeSPX">--%</span>
-                            <span id="confidenceRefSPX" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-
-                    </div>
-                </div>
+            <div class="signal-summary-row">
+                <span class="signal-summary-label">Entry Call</span>
+                <span class="signal-summary-value" id="summaryEntryValue">--</span>
             </div>
-        </div>
-
-        <!-- Bitcoin Buy/Sell Signal Section (same RSI/MACD/Pulse Speed logic as Gold) -->
-        <div class="signal-section" id="signalSectionBTC" style="display: none;">
-            <div class="signal-header">
-                <h2 class="signal-title">⚡ Bitcoin Trading Sent Analysis</h2>
-            </div>
-            <div class="signal-grid">
-                <div class="signal-card" id="signalCardBTC">
-                    <div class="signal-type">
-                        <span class="signal-icon-large" id="signalIconLargeBTC">⚪</span>
-                        <div>
-                            <div class="signal-label" id="signalLabelBTC">LOADING...</div>
-                        </div>
-                    </div>
-
-                    <div class="signal-details">
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Market Heat</span>
-                            <span class="signal-detail-value" id="signalHeatValueBTC">--°</span>
-                            <span id="signalHeatRefBTC" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Sent Strength</span>
-                            <span class="signal-detail-value" id="signalStrengthTextBTC">--/10</span>
-                            <span id="signalStrengthRefBTC" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="strength-meter">
-                            <div class="strength-fill" id="strengthFillBTC" style="width: 0%"></div>
-                        </div>
-
-                        <div class="signal-detail-row" style="margin-top: 20px;">
-                            <span class="signal-detail-label">Pulse Speed</span>
-                            <div class="pulse-indicator" id="pulseIndicatorBTC">
-                                <span class="pulse-icon" id="pulseIconBTC">🚶</span>
-                                <span id="pulseSpeedBTC">Steady</span>
-                                <span id="pulseSpeedRefBTC" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                            </div>
-                        </div>
-
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Confidence Level</span>
-                            <span class="confidence-badge" id="confidenceBadgeBTC">--%</span>
-                            <span id="confidenceRefBTC" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Microsoft Buy/Sell Signal Section (same RSI/MACD/Pulse Speed logic as Gold) -->
-        <div class="signal-section" id="signalSectionMSFT" style="display: none;">
-            <div class="signal-header">
-                <h2 class="signal-title">⚡ Microsoft Trading Sent Analysis</h2>
-            </div>
-            <div class="signal-grid">
-                <div class="signal-card" id="signalCardMSFT">
-                    <div class="signal-type">
-                        <span class="signal-icon-large" id="signalIconLargeMSFT">⚪</span>
-                        <div>
-                            <div class="signal-label" id="signalLabelMSFT">LOADING...</div>
-                        </div>
-                    </div>
-
-                    <div class="signal-details">
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Market Heat</span>
-                            <span class="signal-detail-value" id="signalHeatValueMSFT">--°</span>
-                            <span id="signalHeatRefMSFT" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Sent Strength</span>
-                            <span class="signal-detail-value" id="signalStrengthTextMSFT">--/10</span>
-                            <span id="signalStrengthRefMSFT" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="strength-meter">
-                            <div class="strength-fill" id="strengthFillMSFT" style="width: 0%"></div>
-                        </div>
-
-                        <div class="signal-detail-row" style="margin-top: 20px;">
-                            <span class="signal-detail-label">Pulse Speed</span>
-                            <div class="pulse-indicator" id="pulseIndicatorMSFT">
-                                <span class="pulse-icon" id="pulseIconMSFT">🚶</span>
-                                <span id="pulseSpeedMSFT">Steady</span>
-                                <span id="pulseSpeedRefMSFT" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                            </div>
-                        </div>
-
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Confidence Level</span>
-                            <span class="confidence-badge" id="confidenceBadgeMSFT">--%</span>
-                            <span id="confidenceRefMSFT" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tesla Buy/Sell Signal Section (same RSI/MACD/Pulse Speed logic as Gold) -->
-        <div class="signal-section" id="signalSectionTSLA" style="display: none;">
-            <div class="signal-header">
-                <h2 class="signal-title">⚡ Tesla Trading Sent Analysis</h2>
-            </div>
-            <div class="signal-grid">
-                <div class="signal-card" id="signalCardTSLA">
-                    <div class="signal-type">
-                        <span class="signal-icon-large" id="signalIconLargeTSLA">⚪</span>
-                        <div>
-                            <div class="signal-label" id="signalLabelTSLA">LOADING...</div>
-                        </div>
-                    </div>
-
-                    <div class="signal-details">
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Market Heat</span>
-                            <span class="signal-detail-value" id="signalHeatValueTSLA">--°</span>
-                            <span id="signalHeatRefTSLA" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Sent Strength</span>
-                            <span class="signal-detail-value" id="signalStrengthTextTSLA">--/10</span>
-                            <span id="signalStrengthRefTSLA" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-                        <div class="strength-meter">
-                            <div class="strength-fill" id="strengthFillTSLA" style="width: 0%"></div>
-                        </div>
-
-                        <div class="signal-detail-row" style="margin-top: 20px;">
-                            <span class="signal-detail-label">Pulse Speed</span>
-                            <div class="pulse-indicator" id="pulseIndicatorTSLA">
-                                <span class="pulse-icon" id="pulseIconTSLA">🚶</span>
-                                <span id="pulseSpeedTSLA">Steady</span>
-                                <span id="pulseSpeedRefTSLA" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                            </div>
-                        </div>
-
-                        <div class="signal-detail-row">
-                            <span class="signal-detail-label">Confidence Level</span>
-                            <span class="confidence-badge" id="confidenceBadgeTSLA">--%</span>
-                            <span id="confidenceRefTSLA" style="font-size:0.65rem;opacity:0.35;margin-left:6px;"></span>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="live-price-section">
-            <div class="price-card">
-                <div class="price-label">Current Gold Price</div>
-                <div class="price-value" id="currentPrice">Loading...</div>
-                <div class="price-change positive" id="priceChange">--</div>
-                <div class="last-updated" id="lastUpdated">Connecting to API...</div>
-            </div>
-
-            <div class="price-card">
-                <div class="price-label">Silver Price</div>
-                <div class="price-value" id="silverPrice">Loading...</div>
-                <div class="last-updated">Per Troy Ounce</div>
-            </div>
-
-            <div class="price-card">
-                <div class="price-label">Platinum Price</div>
-                <div class="price-value" id="platinumPrice">Loading...</div>
-                <div class="last-updated">Per Troy Ounce</div>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <div class="chart-header">
-                <h2 class="chart-title">Price History</h2>
-                <div class="time-buttons">
-                    <button class="time-btn active" data-period="1h">1H</button>
-                    <button class="time-btn" data-period="6h">6H</button>
-                    <button class="time-btn" data-period="24h">24H</button>
-                    <button class="time-btn" data-period="7d">7D</button>
-                </div>
-            </div>
-            <div class="chart-container">
-                <canvas id="priceChart"></canvas>
-            </div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-box">
-                <div class="stat-label">Gold/Silver Ratio</div>
-                <div class="stat-value" id="goldSilverRatio">--</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">LBMA Gold AM</div>
-                <div class="stat-value" id="lbmaGoldAM">--</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">LBMA Gold PM</div>
-                <div class="stat-value" id="lbmaGoldPM">--</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-label">Last API Update</div>
-                <div class="stat-value" id="apiTimestamp">--</div>
-            </div>
-        </div>
-
-        <!-- Forecasts & Predictions Section -->
-        <div class="news-section">
-            <div class="news-header">
-                <h2 class="news-title">🔮 Forecasts &amp; Predictions</h2>
-            </div>
-            <div class="news-grid">
-                <a class="news-card" href="https://blackirontimes.com/news/bitcoin-could-fall-below-60-000-before-reaching-48-000-says-zulfiqudo-analysis" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="news-source">Black Iron Times</div>
-                    <div class="news-headline">Bitcoin Could Fall Below $60,000 Before Reaching $48,000, Says ZulfiQudo Analysis</div>
-                    <div class="news-description">ZulfiQudo's technical analysis suggests Bitcoin could break below $60,000 before targeting the $48,000 region.</div>
-                    <div class="news-meta">
-                        <span class="news-time">July 28, 2026</span>
-                        <span class="forecast-status pending">Pending</span>
-                    </div>
-                </a>
-                <a class="news-card" href="https://blackirontimes.com/news/is-a-crash-coming-for-the-s-p-500-record-highs-fuel-debate-over-the-next-market-move" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="news-source">Black Iron Times</div>
-                    <div class="news-headline">Is a Crash Coming for the S&amp;P 500? Record Highs Fuel Debate Over the Next Market Move</div>
-                    <div class="news-description">The S&amp;P 500 remains near record highs, but investors are debating whether stretched valuations, Fed policy, and AI uncertainty could trigger the next market correction.</div>
-                    <div class="news-meta">
-                        <span class="news-time">July 22, 2026</span>
-                        <span class="forecast-status commentary">Commentary</span>
-                    </div>
-                </a>
-                <a class="news-card" href="https://blackirontimes.com/news/wall-street-slides-as-s-p-500-pullback-validates-earlier-correction-warning" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="news-source">Black Iron Times</div>
-                    <div class="news-headline">Wall Street Slides as S&amp;P 500 Pullback Validates Earlier Correction Warning</div>
-                    <div class="news-description">Wall Street tumbled on July 23 after the S&amp;P 500 retreated from record highs, following earlier warnings that elevated valuations could trigger a market correction.</div>
-                    <div class="news-meta">
-                        <span class="news-time">July 24, 2026</span>
-                        <span class="forecast-status commentary">Commentary</span>
-                    </div>
-                </a>
-                <a class="news-card" href="https://blackirontimes.com/research/microsoft-rally-heats-up-as-zulfiqode-algo-issues-caution-signal" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:block;">
-                    <div class="news-source">Black Iron Times</div>
-                    <div class="news-headline">Microsoft Rally Heats Up as ZulfiQode Algo Issues Caution Signal</div>
-                    <div class="news-description">Microsoft's powerful rally has pushed the stock into a high-momentum zone, prompting the proprietary ZulfiQode Algo to issue a cautionary signal despite the broader uptrend remaining intact.</div>
-                    <div class="news-meta">
-                        <span class="news-time">August 3, 2026</span>
-                        <span class="forecast-status commentary">Commentary</span>
-                    </div>
-                </a>
-            </div>
-        </div>
-
-        <!-- News Feed Section -->
-        <div class="news-section">
-            <div class="news-header">
-                <h2 class="news-title">📰 Latest Gold Market News</h2>
-            </div>
-            <div class="news-grid" id="newsGrid">
-                <div class="news-placeholder">Loading latest news...</div>
-            </div>
+            <div class="last-updated-note" id="lastUpdatedNote">Connecting...</div>
         </div>
 
         <footer>
-            <p>FLUX - Gold Analyzer | Real-time Market Data</p>
-            <p style="margin-top: 10px; font-size: 0.7rem;">Live Version - Real-time Price Updates</p>
+            FLUX Signal Terminal — derived from live technical indicators, not a prediction of future price.<br>
+            For informational purposes only. Not financial advice.
         </footer>
     </div>
 
     <script>
-        (function() {
-            'use strict';
-            
-            // API Configuration
-            // NOTE: In production, use serverless functions for API calls
-            // This prevents exposing API keys in the frontend
-            const METALS_API_URL = '/api/metals'; // Use serverless function
-            const NEWS_API_URL = '/api/news'; // Corrected endpoint
-            const MARKET_HEAT_API_URL = '/api/market-heat'; // Market Heat RSI system
-            const MARKET_HEAT_SPX_API_URL = '/api/market-heat-spx'; // S&P 500 Market Heat RSI system
-            const MARKET_HEAT_BTC_API_URL = '/api/market-heat-btc'; // Bitcoin Market Heat RSI system
-            const MARKET_HEAT_MSFT_API_URL = '/api/market-heat-msft'; // Microsoft Market Heat RSI system
-            const MARKET_HEAT_TSLA_API_URL = '/api/market-heat-tsla'; // Tesla Market Heat RSI system
-            const UPDATE_INTERVAL = 3600000; // 1 hour (to stay within API limits)
-            const NEWS_UPDATE_INTERVAL = 3600000; // 1 hour
-            const HEAT_UPDATE_INTERVAL = 3600000; // 1 hour for Market Heat
-            
-            // Store price history
-            let priceHistory = {
-                timestamps: [],
-                gold: [],
-                silver: [],
-                platinum: []
+    (function () {
+        'use strict';
+
+        // ---- Gauge component -------------------------------------------------
+        // Reusable semi-circle SVG gauge. Angle convention: 0deg = needle
+        // pointing to the leftmost state, 180deg = pointing to the rightmost
+        // state, sweeping clockwise over the top. Matches the four equal 45deg
+        // segments requirement: each state owns exactly one quarter of the arc.
+
+        const CX = 110, CY = 118, R = 86, BAND_WIDTH = 24, NEEDLE_LEN = 68, GAP_DEG = 1.5;
+
+        function polarPoint(angleDeg, radius) {
+            const rad = (angleDeg * Math.PI) / 180;
+            return {
+                x: CX - radius * Math.cos(rad),
+                y: CY - radius * Math.sin(rad)
             };
-            
-            let previousGoldPrice = null;
-            let priceChart = null;
-            
-            console.log('🚀 FLUX API Version Starting...');
-            
-            // Fetch live gold prices from API
-            async function fetchGoldPrices() {
-                try {
-                    console.log('📡 Fetching live data from Metals.dev API...');
-                    
-                    // Call serverless function instead of direct API call
-                    const response = await fetch('/api/metals');
-                    
-                    if (!response.ok) {
-                        throw new Error(`API Error: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        console.log('✅ API data received successfully!');
-                        updatePrices(data.data);
-                        storePriceHistory(data.data);
-                        return data.data;
-                    } else {
-                        throw new Error(data.error || 'API returned error status');
-                    }
-                    
-                } catch (error) {
-                    console.error('❌ API Error:', error);
-                    document.getElementById('lastUpdated').textContent = 'Error connecting to API';
-                    return null;
-                }
-            }
-            
-            // Update price display
-            function updatePrices(data) {
-                const goldPrice = data.metals.gold;
-                const silverPrice = data.metals.silver;
-                const platinumPrice = data.metals.platinum;
-                
-                // Update Gold Price
-                document.getElementById('currentPrice').textContent = '$' + goldPrice.toFixed(2);
-                
-                // Calculate change if we have previous price
-                if (previousGoldPrice !== null) {
-                    const change = goldPrice - previousGoldPrice;
-                    const percentChange = ((change / previousGoldPrice) * 100).toFixed(2);
-                    const priceChangeEl = document.getElementById('priceChange');
-                    
-                    priceChangeEl.textContent = (change >= 0 ? '+' : '') + '$' + Math.abs(change).toFixed(2) + 
-                                                ' (' + (change >= 0 ? '+' : '') + percentChange + '%)';
-                    priceChangeEl.className = 'price-change ' + (change >= 0 ? 'positive' : 'negative');
-                } else {
-                    document.getElementById('priceChange').textContent = 'Initial Load';
-                }
-                
-                previousGoldPrice = goldPrice;
-                
-                // Update Silver Price
-                document.getElementById('silverPrice').textContent = '$' + silverPrice.toFixed(2);
-                
-                // Update Platinum Price
-                document.getElementById('platinumPrice').textContent = '$' + platinumPrice.toFixed(2);
-                
-                // Update Stats
-                const goldSilverRatio = (goldPrice / silverPrice).toFixed(2);
-                document.getElementById('goldSilverRatio').textContent = goldSilverRatio + ':1';
-                document.getElementById('lbmaGoldAM').textContent = '$' + data.metals.lbma_gold_am.toFixed(2);
-                document.getElementById('lbmaGoldPM').textContent = '$' + data.metals.lbma_gold_pm.toFixed(2);
-                
-                // Update timestamp
-                const apiTime = new Date(data.timestamps.metal);
-                document.getElementById('apiTimestamp').textContent = apiTime.toLocaleTimeString();
-                document.getElementById('lastUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-                
-                console.log('💰 Prices updated - Gold: $' + goldPrice.toFixed(2));
-            }
-            
-            // Store price history for chart
-            function storePriceHistory(data) {
-                const now = new Date();
-                priceHistory.timestamps.push(now);
-                priceHistory.gold.push(data.metals.gold);
-                priceHistory.silver.push(data.metals.silver);
-                priceHistory.platinum.push(data.metals.platinum);
-                
-                // Keep only last 24 hours of data
-                const maxDataPoints = 1440; // 24 hours at 1 minute intervals
-                if (priceHistory.timestamps.length > maxDataPoints) {
-                    priceHistory.timestamps.shift();
-                    priceHistory.gold.shift();
-                    priceHistory.silver.shift();
-                    priceHistory.platinum.shift();
-                }
-                
-                updateChart();
-            }
-            
-            // Initialize Chart
-            function initChart() {
-                const ctx = document.getElementById('priceChart');
-                
-                if (typeof Chart === 'undefined') {
-                    console.error('❌ Chart.js not loaded');
-                    return;
-                }
-                
-                priceChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: [],
-                        datasets: [{
-                            label: 'Gold (USD/oz)',
-                            data: [],
-                            borderColor: '#FFD700',
-                            backgroundColor: 'rgba(255, 215, 0, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 2,
-                            pointHoverRadius: 6,
-                            pointHoverBackgroundColor: '#FFD700'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            intersect: false,
-                            mode: 'index'
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: 'rgba(26, 26, 26, 0.95)',
-                                titleColor: '#FFD700',
-                                bodyColor: '#FFFFFF',
-                                borderColor: '#FFD700',
-                                borderWidth: 2,
-                                padding: 12,
-                                displayColors: false,
-                                callbacks: {
-                                    label: function(context) {
-                                        return '$' + parseFloat(context.parsed.y).toFixed(2);
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                grid: { color: 'rgba(255, 215, 0, 0.1)', drawBorder: false },
-                                ticks: { color: '#A0A0A0', font: { family: 'Space Mono' } }
-                            },
-                            y: {
-                                grid: { color: 'rgba(255, 215, 0, 0.1)', drawBorder: false },
-                                ticks: {
-                                    color: '#A0A0A0',
-                                    font: { family: 'Space Mono' },
-                                    callback: function(value) { return '$' + value.toFixed(0); }
-                                }
-                            }
-                        }
-                    }
+        }
+
+        function svgEl(tag, attrs) {
+            const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (const key in attrs) el.setAttribute(key, attrs[key]);
+            return el;
+        }
+
+        // order: array of 4 state keys, states: { key: { label, icon, color, angle } }
+        function createGauge(mountEl, order, states) {
+            const svg = svgEl('svg', {
+                viewBox: '0 0 220 150',
+                width: '100%',
+                role: 'img',
+                'aria-label': 'Gauge'
+            });
+
+            const bandPaths = {};
+
+            order.forEach((key, i) => {
+                const a1 = i * 45 + GAP_DEG;
+                const a2 = (i + 1) * 45 - GAP_DEG;
+                const p1 = polarPoint(a1, R);
+                const p2 = polarPoint(a2, R);
+                const path = svgEl('path', {
+                    d: `M ${p1.x} ${p1.y} A ${R} ${R} 0 0 1 ${p2.x} ${p2.y}`,
+                    stroke: states[key].color,
+                    'stroke-width': BAND_WIDTH,
+                    'stroke-linecap': 'round',
+                    fill: 'none',
+                    class: 'gauge-band'
                 });
-                
-                console.log('✅ Chart initialized');
-            }
-            
-            // Update chart with new data
-            function updateChart() {
-                if (!priceChart) return;
-                
-                const labels = priceHistory.timestamps.map(t => t.toLocaleTimeString());
-                
-                priceChart.data.labels = labels;
-                priceChart.data.datasets[0].data = priceHistory.gold;
-                priceChart.update('none'); // Update without animation for smooth updates
-            }
-            
-            // Fetch and display gold news (via serverless function)
-            async function fetchGoldNews() {
-                try {
-                    console.log('📰 Fetching gold market news...');
-                    
-                    // Call our serverless function (CORRECTED ENDPOINT)
-                    const response = await fetch(NEWS_API_URL);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Server Error: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    if (data.success && data.articles) {
-                        console.log(`✅ Fetched ${data.articles.length} news articles`);
-                        displayNews(data.articles);
-                    } else {
-                        throw new Error(data.error || 'No articles found');
-                    }
-                    
-                } catch (error) {
-                    console.error('❌ News Error:', error);
-                    document.getElementById('newsGrid').innerHTML = '<div class="news-placeholder">Unable to load news. Please try again later.</div>';
-                }
-            }
-            
-            // Display news articles
-            function displayNews(articles) {
-                const newsGrid = document.getElementById('newsGrid');
-                
-                if (!articles || articles.length === 0) {
-                    newsGrid.innerHTML = '<div class="news-placeholder">No news available at the moment.</div>';
-                    return;
-                }
-                
-                newsGrid.innerHTML = '';
-                
-                articles.forEach(article => {
-                    const newsCard = document.createElement('div');
-                    newsCard.className = 'news-card';
-                    newsCard.onclick = () => window.open(article.url, '_blank');
-                    
-                    const publishedTime = new Date(article.publishedAt);
-                    const timeAgo = getTimeAgo(publishedTime);
-                    
-                    // Truncate description if too long
-                    const description = article.description ? 
-                        (article.description.length > 150 ? article.description.substring(0, 150) + '...' : article.description) 
-                        : 'Click to read more...';
-                    
-                    newsCard.innerHTML = `
-                        <div class="news-source">${article.source.name || 'News Source'}</div>
-                        <div class="news-headline">${article.title}</div>
-                        <div class="news-description">${description}</div>
-                        <div class="news-meta">
-                            <span class="news-time">${timeAgo}</span>
-                            <a href="${article.url}" target="_blank" class="news-link" onclick="event.stopPropagation()">Read more →</a>
-                        </div>
-                    `;
-                    
-                    newsGrid.appendChild(newsCard);
+                bandPaths[key] = path;
+                svg.appendChild(path);
+            });
+
+            // Needle: drawn pointing at angle 0 (left) by default, then rotated.
+            const needleGroup = svgEl('g', { class: 'gauge-needle' });
+            const needle = svgEl('polygon', {
+                points: `${CX - NEEDLE_LEN},${CY} ${CX},${CY - 5} ${CX},${CY + 5}`,
+                fill: states[order[0]].color
+            });
+            needleGroup.appendChild(needle);
+            svg.appendChild(needleGroup);
+
+            const hub = svgEl('circle', { cx: CX, cy: CY, r: 10, class: 'gauge-hub' });
+            svg.appendChild(hub);
+
+            mountEl.innerHTML = '';
+            mountEl.appendChild(svg);
+
+            function setState(key) {
+                const state = states[key];
+                if (!state) return;
+
+                order.forEach((k) => {
+                    bandPaths[k].classList.toggle('active-band', k === key);
                 });
-                
-                console.log('✅ News displayed successfully');
+
+                needleGroup.style.transform = `rotate(${state.angle}deg)`;
+                needle.setAttribute('fill', state.color);
+                needleGroup.style.filter = `drop-shadow(0 0 6px ${state.color})`;
             }
-            
-            // Calculate time ago
-            function getTimeAgo(date) {
-                const seconds = Math.floor((new Date() - date) / 1000);
-                
-                const intervals = {
-                    year: 31536000,
-                    month: 2592000,
-                    week: 604800,
-                    day: 86400,
-                    hour: 3600,
-                    minute: 60
+
+            return { setState };
+        }
+
+        // ---- State definitions -------------------------------------------------
+
+        const EXIT_ORDER = ['cool', 'alert', 'danger', 'exit'];
+        const EXIT_STATES = {
+            cool:   { label: 'Cool',          icon: '🟢', color: '#22C55E', angle: 15 },
+            alert:  { label: 'Alert',         icon: '🟡', color: '#FACC15', angle: 60 },
+            danger: { label: 'Danger Coming', icon: '🟠', color: '#F97316', angle: 120 },
+            exit:   { label: 'Exit',          icon: '🔴', color: '#EF4444', angle: 165 }
+        };
+
+        const ENTRY_ORDER = ['neutral', 'ready', 'steady', 'go'];
+        const ENTRY_STATES = {
+            neutral: { label: 'Neutral', icon: '⚪', color: '#9CA3AF', angle: 15 },
+            ready:   { label: 'Ready',   icon: '🟡', color: '#FACC15', angle: 60 },
+            steady:  { label: 'Steady',  icon: '🟠', color: '#F97316', angle: 120 },
+            go:      { label: 'Go',      icon: '🟢', color: '#22C55E', angle: 165 }
+        };
+
+        // Heat -> state mapping. Reuses the same 20/40/60/80 thresholds already
+        // driving the BUY/HOLD/SELL signal strength bands in /api/market-heat*
+        // (see computeCompositeAt + strength bands there) so the gauges agree
+        // with the rest of the site rather than inventing new cutoffs.
+        function heatToExitState(heat) {
+            if (heat >= 80) return 'exit';
+            if (heat >= 60) return 'danger';
+            if (heat >= 40) return 'alert';
+            return 'cool';
+        }
+
+        function heatToEntryState(heat) {
+            if (heat < 20) return 'go';
+            if (heat < 40) return 'steady';
+            if (heat < 60) return 'ready';
+            return 'neutral';
+        }
+
+        // ---- Assets -------------------------------------------------------------
+
+        const ASSETS = [
+            { key: 'GOLD', label: 'Gold', endpoint: '/api/market-heat' },
+            { key: 'SPX', label: 'S&P 500', endpoint: '/api/market-heat-spx' },
+            { key: 'BTC', label: 'Bitcoin', endpoint: '/api/market-heat-btc' },
+            { key: 'MSFT', label: 'Microsoft', endpoint: '/api/market-heat-msft' },
+            { key: 'TSLA', label: 'Tesla', endpoint: '/api/market-heat-tsla' }
+        ];
+
+        const UPDATE_INTERVAL = 3600000; // 1 hour, matches the rest of the site
+
+        const cache = {}; // key -> { heat, exitState, entryState, updatedAt }
+        let activeAssetKey = 'GOLD';
+
+        const exitGauge = createGauge(document.getElementById('exitGaugeMount'), EXIT_ORDER, EXIT_STATES);
+        const entryGauge = createGauge(document.getElementById('entryGaugeMount'), ENTRY_ORDER, ENTRY_STATES);
+
+        function renderTabs() {
+            const wrap = document.getElementById('assetTabs');
+            wrap.innerHTML = '';
+            ASSETS.forEach((asset) => {
+                const btn = document.createElement('button');
+                btn.className = 'asset-tab' + (asset.key === activeAssetKey ? ' active' : '');
+                btn.textContent = asset.label;
+                btn.addEventListener('click', () => {
+                    activeAssetKey = asset.key;
+                    renderTabs();
+                    renderActiveAsset();
+                });
+                wrap.appendChild(btn);
+            });
+        }
+
+        function renderActiveAsset() {
+            const asset = ASSETS.find((a) => a.key === activeAssetKey);
+            document.getElementById('summaryAssetName').textContent = asset.label;
+
+            const entry = cache[activeAssetKey];
+            if (!entry) {
+                document.getElementById('exitStatusLabel').textContent = 'Loading...';
+                document.getElementById('entryStatusLabel').textContent = 'Loading...';
+                return;
+            }
+
+            const exitState = EXIT_STATES[entry.exitState];
+            const entryState = ENTRY_STATES[entry.entryState];
+
+            exitGauge.setState(entry.exitState);
+            entryGauge.setState(entry.entryState);
+
+            document.getElementById('exitStatusIcon').textContent = exitState.icon;
+            document.getElementById('exitStatusLabel').textContent = exitState.label;
+            document.getElementById('exitStatusCard').style.boxShadow = `0 0 18px ${exitState.color}55`;
+            document.getElementById('exitStatusCard').style.borderColor = exitState.color;
+            document.getElementById('exitStatusCard').style.color = exitState.color;
+
+            document.getElementById('entryStatusIcon').textContent = entryState.icon;
+            document.getElementById('entryStatusLabel').textContent = entryState.label;
+            document.getElementById('entryStatusCard').style.boxShadow = `0 0 18px ${entryState.color}55`;
+            document.getElementById('entryStatusCard').style.borderColor = entryState.color;
+            document.getElementById('entryStatusCard').style.color = entryState.color;
+
+            document.getElementById('summaryExitValue').textContent = exitState.label;
+            document.getElementById('summaryExitValue').style.color = exitState.color;
+            document.getElementById('summaryEntryValue').textContent = entryState.label;
+            document.getElementById('summaryEntryValue').style.color = entryState.color;
+
+            document.getElementById('lastUpdatedNote').textContent =
+                'Heat: ' + entry.heat.toFixed(1) + '° · Updated ' + entry.updatedAt.toLocaleTimeString();
+        }
+
+        async function fetchAsset(asset) {
+            try {
+                const response = await fetch(asset.endpoint);
+                if (!response.ok) throw new Error('Server error: ' + response.status);
+                const json = await response.json();
+                if (!json.success || !json.data) throw new Error(json.error || 'No data');
+
+                const heat = json.data.currentHeat;
+                cache[asset.key] = {
+                    heat: heat,
+                    exitState: heatToExitState(heat),
+                    entryState: heatToEntryState(heat),
+                    updatedAt: new Date()
                 };
-                
-                for (const [name, secondsInInterval] of Object.entries(intervals)) {
-                    const interval = Math.floor(seconds / secondsInInterval);
-                    if (interval >= 1) {
-                        return `${interval} ${name}${interval > 1 ? 's' : ''} ago`;
-                    }
-                }
-                
-                return 'Just now';
-            }
-            
-            // Fetch and display Market Heat (RSI)
-            async function fetchMarketHeat() {
-                try {
-                    console.log('🔥 Fetching Market Heat data...');
-                    
-                    const response = await fetch(MARKET_HEAT_API_URL);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Server Error: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    
-                    if (data.success && data.data) {
-                        console.log(`✅ Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateHeatDisplay(data.data);
-                    } else {
-                        throw new Error(data.error || 'Failed to fetch Market Heat');
-                    }
-                    
-                } catch (error) {
-                    console.error('❌ Market Heat Error:', error);
-                    // Don't show banner if there's an error
-                    document.getElementById('heatAlertBanner').style.display = 'none';
-                }
+            } catch (error) {
+                console.error('❌ Failed to fetch ' + asset.key + ' heat:', error);
             }
 
-            // Fetch and display S&P 500 signal (same logic as Gold, applied to SPX)
-            async function fetchMarketHeatSPX() {
-                try {
-                    console.log('🔥 Fetching S&P 500 Market Heat data...');
+            if (asset.key === activeAssetKey) renderActiveAsset();
+        }
 
-                    const response = await fetch(MARKET_HEAT_SPX_API_URL);
+        function fetchAll() {
+            ASSETS.forEach(fetchAsset);
+        }
 
-                    if (!response.ok) {
-                        throw new Error(`Server Error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    if (data.success && data.data && data.data.signal) {
-                        console.log(`✅ S&P 500 Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateSignalDisplay(data.data.signal, 'SPX', data.data.currentHeat, data.data.baseline);
-                    } else {
-                        throw new Error(data.error || 'Failed to fetch S&P 500 Market Heat');
-                    }
-
-                } catch (error) {
-                    console.error('❌ S&P 500 Market Heat Error:', error);
-                    document.getElementById('signalSectionSPX').style.display = 'none';
-                }
-            }
-
-            // Fetch and display Bitcoin signal (same logic as Gold, applied to BTC-USD)
-            async function fetchMarketHeatBTC() {
-                try {
-                    console.log('🔥 Fetching Bitcoin Market Heat data...');
-
-                    const response = await fetch(MARKET_HEAT_BTC_API_URL);
-
-                    if (!response.ok) {
-                        throw new Error(`Server Error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    if (data.success && data.data && data.data.signal) {
-                        console.log(`✅ Bitcoin Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateSignalDisplay(data.data.signal, 'BTC', data.data.currentHeat, data.data.baseline);
-                    } else {
-                        throw new Error(data.error || 'Failed to fetch Bitcoin Market Heat');
-                    }
-
-                } catch (error) {
-                    console.error('❌ Bitcoin Market Heat Error:', error);
-                    document.getElementById('signalSectionBTC').style.display = 'none';
-                }
-            }
-
-            // Fetch and display Microsoft signal (same logic as Gold, applied to MSFT)
-            async function fetchMarketHeatMSFT() {
-                try {
-                    console.log('🔥 Fetching Microsoft Market Heat data...');
-
-                    const response = await fetch(MARKET_HEAT_MSFT_API_URL);
-
-                    if (!response.ok) {
-                        throw new Error(`Server Error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    if (data.success && data.data && data.data.signal) {
-                        console.log(`✅ Microsoft Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateSignalDisplay(data.data.signal, 'MSFT', data.data.currentHeat, data.data.baseline);
-                    } else {
-                        throw new Error(data.error || 'Failed to fetch Microsoft Market Heat');
-                    }
-
-                } catch (error) {
-                    console.error('❌ Microsoft Market Heat Error:', error);
-                    document.getElementById('signalSectionMSFT').style.display = 'none';
-                }
-            }
-
-            // Fetch and display Tesla signal (same logic as Gold, applied to TSLA)
-            async function fetchMarketHeatTSLA() {
-                try {
-                    console.log('🔥 Fetching Tesla Market Heat data...');
-
-                    const response = await fetch(MARKET_HEAT_TSLA_API_URL);
-
-                    if (!response.ok) {
-                        throw new Error(`Server Error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    if (data.success && data.data && data.data.signal) {
-                        console.log(`✅ Tesla Market Heat: ${data.data.currentHeat.toFixed(1)} (Level: ${data.data.heatLevel})`);
-                        updateSignalDisplay(data.data.signal, 'TSLA', data.data.currentHeat, data.data.baseline);
-                    } else {
-                        throw new Error(data.error || 'Failed to fetch Tesla Market Heat');
-                    }
-
-                } catch (error) {
-                    console.error('❌ Tesla Market Heat Error:', error);
-                    document.getElementById('signalSectionTSLA').style.display = 'none';
-                }
-            }
-
-            // Update Market Heat display
-            function updateHeatDisplay(heatData) {
-                const banner = document.getElementById('heatAlertBanner');
-                const icon = document.getElementById('heatAlertIcon');
-                const title = document.getElementById('heatAlertTitle');
-                const heatValue = document.getElementById('heatValue');
-                const heatCycles = document.getElementById('heatCycles');
-                const gaugeFill = document.getElementById('heatGaugeFill');
-                
-                // Update banner visibility and level
-                banner.style.display = 'block';
-                banner.className = 'heat-alert-banner level-' + heatData.heatLevel;
-                
-                // Update icon and title
-                icon.textContent = heatData.alert.icon;
-                title.textContent = heatData.alert.title;
-                
-                // Update heat value
-                heatValue.textContent = heatData.currentHeat.toFixed(1) + '°';
-                
-                // Update cycles
-                const dotCount = Math.min(heatData.peakCycles + 1, 3);
-                heatCycles.textContent = '•'.repeat(dotCount);
-                
-                // Update gauge
-                const gaugePercentage = Math.min((heatData.currentHeat / 100) * 100, 100);
-                gaugeFill.style.width = gaugePercentage + '%';
-                gaugeFill.className = 'heat-gauge-fill level-' + heatData.heatLevel;
-                
-                // Update Signal Section if signal data exists
-                if (heatData.signal) {
-                    updateSignalDisplay(heatData.signal, '', heatData.currentHeat, heatData.baseline);
-                }
-                
-                console.log('🔥 Market Heat display updated');
-            }
-            
-            // Update Buy/Sell Signal display (suffix lets this render Gold or S&P 500 cards)
-            function updateSignalDisplay(signalData, suffix = '', currentHeat = null, baseline = null) {
-                const signalSection = document.getElementById('signalSection' + suffix);
-                const signalCard = document.getElementById('signalCard' + suffix);
-                const signalIconLarge = document.getElementById('signalIconLarge' + suffix);
-                const signalLabel = document.getElementById('signalLabel' + suffix);
-                const signalHeatValue = document.getElementById('signalHeatValue' + suffix);
-                const signalHeatRef = document.getElementById('signalHeatRef' + suffix);
-                const signalStrengthText = document.getElementById('signalStrengthText' + suffix);
-                const signalStrengthRef = document.getElementById('signalStrengthRef' + suffix);
-                const strengthFill = document.getElementById('strengthFill' + suffix);
-                const pulseIcon = document.getElementById('pulseIcon' + suffix);
-                const pulseSpeed = document.getElementById('pulseSpeed' + suffix);
-                const pulseSpeedRef = document.getElementById('pulseSpeedRef' + suffix);
-                const confidenceBadge = document.getElementById('confidenceBadge' + suffix);
-                const confidenceRef = document.getElementById('confidenceRef' + suffix);
-
-                // Show signal section
-                signalSection.style.display = 'block';
-                
-                // Update signal card styling
-                const signalType = signalData.type.toLowerCase();
-                signalCard.className = 'signal-card ' + signalType;
-                
-                // Update signal type
-                signalIconLarge.textContent = signalData.icon;
-                signalLabel.textContent = signalData.type + ' SENT';
-                signalLabel.className = 'signal-label ' + signalType;
-
-                // Update market heat value
-                if (signalHeatValue && currentHeat !== null) {
-                    signalHeatValue.textContent = currentHeat.toFixed(1) + '°';
-                }
-                if (signalHeatRef && baseline !== null) {
-                    signalHeatRef.textContent = '(' + baseline.toFixed(1) + ')';
-                }
-
-                // Update strength
-                signalStrengthText.textContent = signalData.strength + '/10 (' + signalData.strengthLabel + ')';
-                const strengthPercentage = (signalData.strength / 10) * 100;
-                strengthFill.style.width = strengthPercentage + '%';
-                strengthFill.className = 'strength-fill ' + signalType;
-                if (signalStrengthRef && signalData.rawStrength !== undefined) {
-                    signalStrengthRef.textContent = '(' + signalData.rawStrength + '/10)';
-                }
-
-                // Update pulse speed
-                pulseIcon.textContent = signalData.pulseIcon;
-                pulseSpeed.textContent = signalData.pulseSpeed;
-                if (pulseSpeedRef && signalData.pulseValue !== undefined) {
-                    pulseSpeedRef.textContent = '(' + signalData.pulseValue + '%)';
-                }
-
-                // Update confidence
-                confidenceBadge.textContent = signalData.confidence + '%';
-                if (confidenceRef && signalData.rawConfidence !== undefined) {
-                    confidenceRef.textContent = '(' + signalData.rawConfidence + '%)';
-                }
-                
-                console.log('⚡ Signal display updated: ' + signalData.type + ' (' + signalData.strength + '/10)');
-            }
-            
-            // Initialize app
-            async function init() {
-                console.log('⏳ Initializing FLUX API Version...');
-                
-                // Wait for Chart.js to load
-                let attempts = 0;
-                while (typeof Chart === 'undefined' && attempts < 50) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    attempts++;
-                }
-                
-                if (typeof Chart === 'undefined') {
-                    console.error('❌ Chart.js failed to load');
-                    return;
-                }
-                
-                // Initialize chart
-                initChart();
-                
-                // Fetch initial data
-                await fetchGoldPrices();
-                
-                // Fetch initial news
-                await fetchGoldNews();
-                
-                // Fetch initial Market Heat data
-                await fetchMarketHeat();
-
-                // Fetch initial S&P 500 signal data
-                await fetchMarketHeatSPX();
-
-                // Fetch initial Bitcoin signal data
-                await fetchMarketHeatBTC();
-
-                // Fetch initial Microsoft signal data
-                await fetchMarketHeatMSFT();
-
-                // Fetch initial Tesla signal data
-                await fetchMarketHeatTSLA();
-
-                // Hide loading overlay
-                document.getElementById('loadingOverlay').classList.add('hidden');
-
-                // Set up auto-refresh (every 60 seconds for prices, every hour for news)
-                setInterval(fetchGoldPrices, UPDATE_INTERVAL);
-                setInterval(fetchGoldNews, NEWS_UPDATE_INTERVAL);
-                setInterval(fetchMarketHeat, HEAT_UPDATE_INTERVAL);
-                setInterval(fetchMarketHeatSPX, HEAT_UPDATE_INTERVAL);
-                setInterval(fetchMarketHeatBTC, HEAT_UPDATE_INTERVAL);
-                setInterval(fetchMarketHeatMSFT, HEAT_UPDATE_INTERVAL);
-                setInterval(fetchMarketHeatTSLA, HEAT_UPDATE_INTERVAL);
-
-                console.log('✅ FLUX API Version fully initialized!');
-                console.log('🔄 Price auto-refresh every 1 hour (to stay within API limits)');
-                console.log('📰 News auto-refresh every hour');
-                console.log('🔥 Market Heat auto-refresh every hour');
-                console.log('🔥 S&P 500 signal auto-refresh every hour');
-                console.log('🔥 Bitcoin signal auto-refresh every hour');
-                console.log('🔥 Microsoft signal auto-refresh every hour');
-                console.log('🔥 Tesla signal auto-refresh every hour');
-            }
-            
-            // Start when DOM is ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                init();
-            }
-            
-        })();
+        renderTabs();
+        renderActiveAsset();
+        fetchAll();
+        setInterval(fetchAll, UPDATE_INTERVAL);
+    })();
     </script>
-
 </body>
 </html>
