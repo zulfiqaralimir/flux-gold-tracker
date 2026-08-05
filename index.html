@@ -164,7 +164,10 @@
 
         .gauge-needle {
             transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-            transform-origin: center;
+            /* transform-origin is set from JS in view-box units, to match
+               the exact pivot (CX, CY) — "center" here would resolve against
+               the needle polygon's own bounding box, not the gauge hub,
+               and rotate around the wrong point. */
         }
 
         .gauge-hub {
@@ -358,6 +361,8 @@
 
             // Needle: drawn pointing at angle 0 (left) by default, then rotated.
             const needleGroup = svgEl('g', { class: 'gauge-needle' });
+            needleGroup.style.transformBox = 'view-box';
+            needleGroup.style.transformOrigin = `${CX}px ${CY}px`;
             const needle = svgEl('polygon', {
                 points: `${CX - NEEDLE_LEN},${CY} ${CX},${CY - 5} ${CX},${CY + 5}`,
                 fill: states[order[0]].color
