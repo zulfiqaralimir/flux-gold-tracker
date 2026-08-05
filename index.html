@@ -241,8 +241,11 @@
         }
 
         .gauge-needle {
-            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-            /* transform-origin is set from JS in view-box units, to match
+            /* Rotation is driven every frame by a spring-physics loop (see
+               JS), not a CSS transition — that's what lets the needle
+               accelerate away from rest and decelerate into its new
+               reading like a real analog gauge, instead of a flat ease.
+               transform-origin is set from JS in view-box units, to match
                the exact pivot (CX, CY) — "center" here would resolve against
                the needle polygon's own bounding box, not the gauge hub,
                and rotate around the wrong point. */
@@ -437,6 +440,40 @@
         }
         requestAnimationFrame(runJitterLoop);
 
+        // Needle motion: an underdamped spring-damper sim, not a CSS ease.
+        // A flat transition only ever decelerates into the target; a real
+        // speedometer needle has mass and a spring behind it, so it *speeds
+        // up* leaving the old reading, *slows down* into the new one, and
+        // carries just enough momentum to swing slightly past it before
+        // settling back — same feel as a car gauge on accel/decel.
+        const NEEDLE_STIFFNESS = 130; // spring pull toward target (deg/s^2 per deg of error)
+        const NEEDLE_DAMPING = 15;    // bleeds velocity; lower = more overshoot/wobble
+        const needleSprings = [];
+
+        function registerNeedleSpring(el, initialAngle) {
+            const spring = { el, current: initialAngle, target: initialAngle, velocity: 0 };
+            needleSprings.push(spring);
+            return spring;
+        }
+
+        let lastNeedleTs = null;
+        function runNeedleSpringLoop(timestamp) {
+            if (lastNeedleTs === null) lastNeedleTs = timestamp;
+            const dt = Math.min((timestamp - lastNeedleTs) / 1000, 0.05); // clamp for tab-switch stalls
+            lastNeedleTs = timestamp;
+
+            needleSprings.forEach((spring) => {
+                const displacement = spring.current - spring.target;
+                const accel = -NEEDLE_STIFFNESS * displacement - NEEDLE_DAMPING * spring.velocity;
+                spring.velocity += accel * dt;
+                spring.current += spring.velocity * dt;
+                spring.el.style.transform = `rotate(${spring.current.toFixed(2)}deg)`;
+            });
+
+            requestAnimationFrame(runNeedleSpringLoop);
+        }
+        requestAnimationFrame(runNeedleSpringLoop);
+
         // order: array of 4 state keys, states: { key: { label, icon, color, angle } }
         function createGauge(mountEl, order, states) {
             const svg = svgEl('svg', {
@@ -466,8 +503,8 @@
             });
 
             // Needle: drawn pointing at angle 0 (left) by default, then rotated.
-            // The state angle (smooth CSS transition) and the idle tremor
-            // (continuous rAF loop) are applied on two separate nested groups
+            // The state angle (spring-physics rAF loop) and the idle tremor
+            // (separate sinusoidal rAF loop) are applied on two nested groups
             // so they don't fight over the same `transform` property.
             const needleGroup = svgEl('g', { class: 'gauge-needle' });
             needleGroup.style.transformBox = 'view-box';
@@ -485,6 +522,7 @@
             needleGroup.appendChild(jitterGroup);
             svg.appendChild(needleGroup);
             registerNeedleJitter(jitterGroup);
+            const needleSpring = registerNeedleSpring(needleGroup, states[order[0]].angle);
 
             const hub = svgEl('circle', { cx: CX, cy: CY, r: 10, class: 'gauge-hub' });
             svg.appendChild(hub);
@@ -500,7 +538,7 @@
                     bandPaths[k].classList.toggle('active-band', k === key);
                 });
 
-                needleGroup.style.transform = `rotate(${state.angle}deg)`;
+                needleSpring.target = state.angle;
                 needle.setAttribute('fill', state.color);
                 needleGroup.style.filter = `drop-shadow(0 0 6px ${state.color})`;
             }
