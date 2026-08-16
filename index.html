@@ -217,6 +217,7 @@
         .news-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
+            align-items: start;
             gap: 20px;
             margin-top: 30px;
         }
@@ -851,28 +852,24 @@
                 source: 'BlackIronTimes',
                 title: 'Markets — Gold',
                 description: 'Live gold market data, price charts, and coverage from the BlackIronTimes markets desk.',
-                image: 'https://blackirontimes.com/api/og',
                 url: 'https://blackirontimes.com/markets/gold'
             },
             {
                 source: 'BlackIronTimes',
                 title: 'Markets — Crypto',
                 description: 'Live crypto market data, price charts, and coverage from the BlackIronTimes markets desk.',
-                image: 'https://blackirontimes.com/api/og',
                 url: 'https://blackirontimes.com/markets/crypto'
             },
             {
                 source: 'BlackIronTimes',
                 title: 'Markets — Crude Oil',
                 description: 'Live crude oil market data, price charts, and coverage from the BlackIronTimes markets desk.',
-                image: 'https://blackirontimes.com/api/og',
                 url: 'https://blackirontimes.com/markets/crude-oil'
             },
             {
                 source: 'BlackIronTimes',
                 title: 'News — USA / Federal Reserve',
                 description: 'Federal Reserve policy coverage and analysis from the BlackIronTimes news desk.',
-                image: 'https://blackirontimes.com/api/og',
                 url: 'https://blackirontimes.com/news/usa/fed-reserve'
             },
             {
@@ -902,9 +899,10 @@
             const grid = document.getElementById('newsGrid');
             grid.innerHTML = NEWS_ITEMS.map((item) => `
                 <a class="news-card" href="${item.url}" target="_blank" rel="noopener noreferrer">
+                    ${item.image ? `
                     <div class="news-thumb-wrap">
                         <img src="${item.image}" alt="${item.title}" loading="lazy">
-                    </div>
+                    </div>` : ''}
                     <div class="news-card-body">
                         <div class="news-source">${item.source}</div>
                         <div class="news-title">${item.title}</div>
