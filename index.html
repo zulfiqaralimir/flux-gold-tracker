@@ -485,11 +485,181 @@
         }
 
         footer {
+            position: relative;
+            margin-top: 64px;
+            padding: 48px 20px 28px;
             text-align: center;
-            padding: 40px 20px 10px;
             color: var(--text-secondary);
-            font-size: 0.7rem;
-            line-height: 1.6;
+        }
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            width: min(560px, 80%);
+            height: 1px;
+            transform: translateX(-50%);
+            background: linear-gradient(to right, transparent, var(--accent-gold), transparent);
+        }
+        footer::after {
+            content: '';
+            position: absolute;
+            top: -1px; left: 50%;
+            width: 7px; height: 7px;
+            transform: translate(-50%, -50%) rotate(45deg);
+            background: var(--accent-gold);
+            box-shadow: 0 0 14px 2px rgba(255, 215, 0, 0.55);
+        }
+        .foot-mark {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-style: italic;
+            font-weight: 700;
+            font-size: 1.7rem;
+            color: #f6efd8;
+        }
+        .foot-mark b { color: var(--accent-gold); }
+        .foot-mark span {
+            font-family: 'Orbitron', sans-serif;
+            font-style: normal;
+            font-weight: 900;
+            font-size: 0.8em;
+            letter-spacing: 0.2em;
+            margin-left: 0.35em;
+            color: var(--accent-gold);
+        }
+        .foot-tag {
+            margin-top: 6px;
+            font-size: 0.62rem;
+            letter-spacing: 0.45em;
+            text-indent: 0.45em;
+            text-transform: uppercase;
+        }
+        .foot-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin: 26px 0 28px;
+        }
+        .foot-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 20px;
+            border: 1px solid var(--border-soft);
+            border-radius: 999px;
+            background: var(--bg-panel);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.72rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            transition: border-color .25s, color .25s, box-shadow .25s, transform .25s;
+        }
+        .foot-link:hover, .foot-link:focus-visible {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            box-shadow: 0 0 22px rgba(255, 215, 0, 0.18);
+            transform: translateY(-2px);
+            outline: none;
+        }
+        .foot-link.primary {
+            background: linear-gradient(135deg, #B8860B, var(--accent-gold));
+            color: #1a1300;
+            border-color: transparent;
+            font-weight: 700;
+        }
+        .foot-link.primary:hover, .foot-link.primary:focus-visible { color: #1a1300; filter: brightness(1.1); }
+        .foot-legal {
+            max-width: 640px;
+            margin: 0 auto;
+            font-size: 0.68rem;
+            line-height: 1.8;
+        }
+        .foot-legal em { font-style: normal; color: var(--text-primary); }
+        .foot-copy {
+            margin-top: 18px;
+            font-size: 0.62rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        /* ---- Cinematic footer motion ---- */
+        footer { overflow: hidden; isolation: isolate; }
+        .foot-aurora {
+            position: absolute; inset: -20% -10% -10%; z-index: -1; pointer-events: none;
+            background:
+                radial-gradient(40% 55% at 22% 80%, rgba(255, 215, 0, 0.13), transparent 70%),
+                radial-gradient(35% 50% at 78% 75%, rgba(245, 158, 11, 0.10), transparent 70%),
+                radial-gradient(30% 40% at 50% 100%, rgba(34, 197, 94, 0.06), transparent 70%);
+            filter: blur(18px);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 60%, transparent);
+            mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 60%, transparent);
+            animation: auroraDrift 16s ease-in-out infinite alternate;
+        }
+        @keyframes auroraDrift {
+            0%   { transform: translate3d(-3%, 2%, 0) scale(1); opacity: .75; }
+            100% { transform: translate3d(3%, -3%, 0) scale(1.12); opacity: 1; }
+        }
+        .foot-dust { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+        .foot-dust i {
+            position: absolute; bottom: -10px; left: var(--x);
+            width: var(--s); height: var(--s); border-radius: 50%;
+            background: var(--accent-gold); box-shadow: 0 0 8px 1px rgba(255, 215, 0, .7);
+            opacity: 0; animation: dustRise var(--d) linear var(--t) infinite;
+        }
+        @keyframes dustRise {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            15% { opacity: .85; }
+            100% { transform: translateY(-190px) translateX(var(--dx)); opacity: 0; }
+        }
+        footer::before { background: linear-gradient(to right, transparent, rgba(255,215,0,.35), transparent); }
+        .foot-beam {
+            position: absolute; top: -1px; left: 50%; width: min(560px, 80%); height: 3px;
+            transform: translateX(-50%); overflow: hidden; pointer-events: none;
+        }
+        .foot-beam::after {
+            content: ''; position: absolute; top: 0; left: -30%; width: 30%; height: 100%;
+            background: linear-gradient(to right, transparent, #fff7cc, transparent);
+            filter: blur(1px); animation: beamRun 5s cubic-bezier(.6,0,.4,1) infinite;
+        }
+        @keyframes beamRun { 0% { left: -30%; } 60%, 100% { left: 110%; } }
+        footer::after { animation: gemPulse 3s ease-in-out infinite; }
+        @keyframes gemPulse {
+            0%, 100% { box-shadow: 0 0 10px 1px rgba(255,215,0,.45); }
+            50% { box-shadow: 0 0 22px 5px rgba(255,215,0,.8); }
+        }
+        .foot-mark {
+            background: linear-gradient(100deg, #f6efd8 0%, #f6efd8 40%, #fff 50%, #f6efd8 60%, #f6efd8 100%);
+            background-size: 250% 100%; -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; animation: markSheen 7s ease-in-out infinite;
+            filter: drop-shadow(0 0 18px rgba(255,215,0,.22));
+        }
+        .foot-mark b, .foot-mark span { -webkit-text-fill-color: var(--accent-gold); }
+        @keyframes markSheen { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0 0; } }
+        .foot-link.primary { position: relative; overflow: hidden; animation: ctaGlow 3.2s ease-in-out infinite; }
+        .foot-link.primary::after {
+            content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%;
+            background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+            transform: skewX(-20deg); animation: ctaSweep 4.5s ease-in-out infinite;
+        }
+        @keyframes ctaSweep { 0% { left: -60%; } 55%, 100% { left: 130%; } }
+        @keyframes ctaGlow {
+            0%, 100% { box-shadow: 0 0 0 rgba(255,215,0,0); }
+            50% { box-shadow: 0 0 26px rgba(255,215,0,.35); }
+        }
+        .foot-link .arr { display: inline-block; transition: transform .25s; }
+        .foot-link:hover .arr { transform: translateX(5px); }
+
+        /* scroll reveal: only hidden when JS is running */
+        .js .foot-rv { opacity: 0; transform: translateY(22px); filter: blur(6px);
+            transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1), filter .9s;
+            transition-delay: calc(var(--i, 0) * 120ms); }
+        .js footer.in .foot-rv { opacity: 1; transform: none; filter: none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .foot-aurora, .foot-dust i, .foot-beam::after, footer::after, .foot-mark, .foot-link.primary, .foot-link.primary::after { animation: none !important; }
+            .js .foot-rv { opacity: 1; transform: none; filter: none; transition: none; }
         }
     </style>
 </head>
@@ -553,12 +723,33 @@
             <div class="news-grid" id="newsGrid"></div>
         </div>
 
-        <footer>
-            <a href="/pakistan-gold" style="color:var(--accent-gold);text-decoration:none;letter-spacing:.15em;text-transform:uppercase;font-size:.75rem">Gold price in Pakistan: tola &amp; 10g &rarr;</a><br><br>
-            FLUX Signal Terminal — derived from ZULFIQODE Algo, not a prediction of future price.<br>
-            For informational purposes only. Not financial advice.<br>
-            ZULFIQODE is a product of Black Iron Quantum AI.
+        <footer id="siteFooter">
+            <div class="foot-aurora" aria-hidden="true"></div>
+            <div class="foot-dust" aria-hidden="true"><i style="--x:8%;--s:2px;--d:9s;--t:0s;--dx:14px"></i><i style="--x:18%;--s:3px;--d:12s;--t:2s;--dx:-18px"></i><i style="--x:30%;--s:2px;--d:10s;--t:5s;--dx:10px"></i><i style="--x:42%;--s:3px;--d:13s;--t:1s;--dx:-12px"></i><i style="--x:55%;--s:2px;--d:9s;--t:4s;--dx:16px"></i><i style="--x:66%;--s:3px;--d:12s;--t:7s;--dx:-14px"></i><i style="--x:77%;--s:2px;--d:10s;--t:3s;--dx:12px"></i><i style="--x:88%;--s:3px;--d:11s;--t:6s;--dx:-10px"></i><i style="--x:95%;--s:2px;--d:13s;--t:8s;--dx:8px"></i><i style="--x:24%;--s:2px;--d:11s;--t:9s;--dx:-8px"></i></div>
+            <div class="foot-beam" aria-hidden="true"></div>
+            <div class="foot-mark foot-rv" style="--i:0">Zulfi<b>Q</b>ode<span>FLUX</span></div>
+            <div class="foot-tag foot-rv" style="--i:1">Signal Terminal</div>
+            <nav class="foot-links" aria-label="Footer">
+                <a class="foot-link primary foot-rv" style="--i:2" href="/pakistan-gold">Gold in Pakistan &middot; Tola &amp; 10g <span class="arr" aria-hidden="true">&rarr;</span></a>
+                <a class="foot-link foot-rv" style="--i:3" href="https://blackirontimes.com" target="_blank" rel="noopener noreferrer">BlackIronTimes</a>
+                <a class="foot-link foot-rv" style="--i:4" href="/login.html">Private dashboard</a>
+            </nav>
+            <p class="foot-legal foot-rv" style="--i:5">
+                FLUX Signal Terminal is derived from <em>ZULFIQODE Algo</em> and is not a prediction of future price.
+                For informational purposes only. Not financial advice.
+            </p>
+            <p class="foot-copy foot-rv" style="--i:6">ZULFIQODE &middot; a product of Black Iron Quantum AI</p>
         </footer>
+        <script>
+        (function () {
+            var f = document.getElementById('siteFooter');
+            document.documentElement.classList.add('js');
+            if (!('IntersectionObserver' in window)) { f.classList.add('in'); return; }
+            new IntersectionObserver(function (e, o) {
+                if (e[0].isIntersecting) { f.classList.add('in'); o.disconnect(); }
+            }, { threshold: 0.25 }).observe(f);
+        })();
+        </script>
     </div>
 
     <script>
