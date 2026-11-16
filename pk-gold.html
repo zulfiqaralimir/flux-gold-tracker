@@ -448,10 +448,15 @@
     const MONO = '"Space Mono", ui-monospace, Menlo, Consolas, monospace';
     const HEAD = '"Orbitron", "Segoe UI", Arial, sans-serif';
 
+    function brandMark(ctx, W, H, pad) {
+        ctx.save(); ctx.textAlign = 'right'; ctx.fillStyle = '#FFD700'; ctx.font = '700 30px ' + HEAD;
+        ctx.fillText('www.blackirontimes.com', W - pad, H - 24); ctx.restore();
+    }
+
     function downloadChartPng() {
         const q = state.quote;
         if (!state.chart || !state.history || !state.history.points.length) { alert('No chart to export for this view.'); return; }
-        const src = state.chart.canvas, W = 1400, pad = 40, headH = 120, footH = 110;
+        const src = state.chart.canvas, W = 1400, pad = 40, headH = 120, footH = 160;
         const chartH = Math.round((src.height / src.width) * (W - pad * 2));
         const { c, ctx } = frame(W, headH + chartH + footH);
         ctx.fillStyle = '#FFD700'; ctx.font = '700 30px ' + HEAD; ctx.fillText('ZulfiQode FLUX | Gold Price Pakistan', pad, 55);
@@ -463,6 +468,7 @@
         let y = headH + chartH + 28;
         if (q && q.demo) { ctx.fillText('[DEMO]', pad, y); y += 22; }
         ctx.fillText('Generated ' + new Date().toLocaleString() + ' | flux-gold-tracker.vercel.app/pakistan-gold | Informational only, not financial advice.', pad, y + 4);
+        brandMark(ctx, W, headH + chartH + footH, pad);
         savePng(c, 'gold-chart-' + state.range + '-' + state.type + '.png');
     }
 
@@ -506,6 +512,7 @@
         y = wrapText(ctx, 'Price time: ' + new Date(q.gold.time).toLocaleString() + (q.gold.delayed ? ' (delayed)' : ''), pad, y, W - pad * 2, 21);
         y = wrapText(ctx, '1 troy oz = 31.1034768 g; 1 tola = 11.6638038 g. Excludes making charges, taxes and dealer spread. Informational only, not financial advice.', pad, y + 2, W - pad * 2, 21);
         ctx.fillText('flux-gold-tracker.vercel.app/pakistan-gold', pad, H - 22);
+        brandMark(ctx, W, H, pad);
         savePng(c, 'gold-rates-pkr-' + new Date().toISOString().slice(0, 10) + '.png');
     }
 
