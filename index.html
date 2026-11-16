@@ -21,7 +21,7 @@
     <meta name="twitter:description" content="A live signal terminal tracking gold, stocks, indices, and crypto with real-time market signals.">
     <meta name="twitter:image" content="https://flux-gold-tracker.vercel.app/og-image.png">
 
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600;1,700&family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #08090C;
@@ -128,23 +128,77 @@
         }
 
         .logo {
+            display: inline-flex;
+            align-items: baseline;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.35em 0.5em;
+            line-height: 1;
+            position: relative;
+        }
+
+        .logo-name {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-style: italic;
+            font-weight: 700;
+            font-size: clamp(2.2rem, 7vw, 3.6rem);
+            letter-spacing: 0.01em;
+            color: #f6efd8;
+            text-shadow: 0 0 28px rgba(255, 215, 0, 0.18);
+        }
+
+        .logo-name b { color: var(--accent-gold); font-weight: 700; }
+
+        .logo-sep {
+            align-self: center;
+            width: 1px;
+            height: 1.9rem;
+            background: linear-gradient(to bottom, transparent, var(--accent-gold), transparent);
+            opacity: 0.8;
+        }
+
+        .logo-flux {
             font-family: 'Orbitron', sans-serif;
-            font-size: 2.4rem;
             font-weight: 900;
-            background: linear-gradient(135deg, var(--accent-gold) 0%, #fff7cc 50%, var(--accent-gold) 100%);
+            font-size: clamp(1.9rem, 6vw, 3rem);
+            letter-spacing: 0.22em;
+            margin-right: -0.22em; /* offset trailing tracking so it stays centred */
+            background: linear-gradient(100deg, #B8860B 0%, var(--accent-gold) 30%, #fff7cc 50%, var(--accent-gold) 70%, #B8860B 100%);
+            background-size: 220% 100%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            letter-spacing: 6px;
+            animation: fluxShine 6s ease-in-out infinite;
         }
 
+        @keyframes fluxShine {
+            0%, 100% { background-position: 100% 0; }
+            50% { background-position: 0 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) { .logo-flux { animation: none; } }
+
         .tagline {
-            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            font-size: 0.72rem;
+            font-weight: 400;
             color: var(--text-secondary);
-            margin-top: 8px;
-            letter-spacing: 3px;
+            margin-top: 14px;
+            letter-spacing: 0.5em;
+            text-indent: 0.5em;
             text-transform: uppercase;
         }
+
+        .tagline::before, .tagline::after {
+            content: '';
+            height: 1px;
+            width: clamp(24px, 9vw, 72px);
+            background: linear-gradient(to right, transparent, rgba(255, 215, 0, 0.55));
+        }
+        .tagline::after { transform: scaleX(-1); }
 
         /* Asset tabs */
         .asset-tabs {
@@ -447,7 +501,7 @@
     <div class="container">
         <header>
             <canvas id="polaris" aria-hidden="true"></canvas>
-            <h1 class="logo">ZulfiQode - FLUX</h1>
+            <h1 class="logo" aria-label="ZulfiQode FLUX"><span class="logo-name" aria-hidden="true">Zulfi<b>Q</b>ode</span><span class="logo-sep" aria-hidden="true"></span><span class="logo-flux" aria-hidden="true">FLUX</span></h1>
             <p class="tagline">Signal Terminal</p>
         </header>
 
@@ -500,6 +554,7 @@
         </div>
 
         <footer>
+            <a href="/pakistan-gold" style="color:var(--accent-gold);text-decoration:none;letter-spacing:.15em;text-transform:uppercase;font-size:.75rem">Gold price in Pakistan: tola &amp; 10g &rarr;</a><br><br>
             FLUX Signal Terminal — derived from ZULFIQODE Algo, not a prediction of future price.<br>
             For informational purposes only. Not financial advice.<br>
             ZULFIQODE is a product of Black Iron Quantum AI.

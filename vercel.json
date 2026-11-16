@@ -1,8 +1,18 @@
 {
   "version": 2,
   "rewrites": [
-    { "source": "/dashboard", "destination": "/api/dashboard" },
-    { "source": "/logout", "destination": "/api/logout" }
+    {
+      "source": "/dashboard",
+      "destination": "/api/dashboard"
+    },
+    {
+      "source": "/logout",
+      "destination": "/api/logout"
+    },
+    {
+      "source": "/pakistan-gold",
+      "destination": "/pk-gold.html"
+    }
   ],
   "functions": {
     "api/dashboard.js": {
