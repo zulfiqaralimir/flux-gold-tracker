@@ -461,7 +461,7 @@
         ctx.drawImage(src, pad, headH, W - pad * 2, chartH);
         ctx.fillStyle = '#8B93A7'; ctx.font = '15px ' + MONO;
         let y = headH + chartH + 28;
-        y = wrapText(ctx, (state.history.source || '') + (q && q.demo ? ' [DEMO]' : ''), pad, y, W - pad * 2, 22);
+        if (q && q.demo) { ctx.fillText('[DEMO]', pad, y); y += 22; }
         ctx.fillText('Generated ' + new Date().toLocaleString() + ' | flux-gold-tracker.vercel.app/pakistan-gold | Informational only, not financial advice.', pad, y + 4);
         savePng(c, 'gold-chart-' + state.range + '-' + state.type + '.png');
     }
