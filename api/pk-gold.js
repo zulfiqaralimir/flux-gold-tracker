@@ -145,7 +145,13 @@ function series(r) {
     const q = (r.indicators && r.indicators.quote && r.indicators.quote[0]) || {};
     const close = q.close || [];
     const out = [];
-    for (let i = 0; i < ts.length; i++) if (num(close[i])) out.push([ts[i] * 1000, close[i]]);
+    for (let i = 0; i < ts.length; i++) {
+        if (!num(close[i])) continue;
+        const o = num(q.open && q.open[i]) ?? close[i];
+        const h = num(q.high && q.high[i]) ?? Math.max(o, close[i]);
+        const l = num(q.low && q.low[i]) ?? Math.min(o, close[i]);
+        out.push([ts[i] * 1000, close[i], o, h, l]);
+    }
     return out;
 }
 
@@ -160,11 +166,12 @@ async function buildHistory(rangeKey) {
     const fallbackRate = num(fxR && fxR.meta && fxR.meta.regularMarketPrice);
     // PKR value of each gold point uses the latest FX point at-or-before it.
     let j = 0, last = null;
-    const points = gold.map(([t, usd]) => {
+    // point = [time, close, closePKR, openUSD, highUSD, lowUSD]
+    const points = gold.map(([t, usd, o, h, l]) => {
         while (j < fx.length && fx[j][0] <= t) { last = fx[j][1]; j++; }
         // No FX point yet at this time => no PKR value (never back-fill with a later rate).
         const rate = fx.length ? last : fallbackRate;
-        return [t, usd, rate ? usd * rate : null];
+        return [t, usd, rate ? usd * rate : null, o, h, l];
     });
     return {
         ok: true, demo: false, range: rangeKey, points,

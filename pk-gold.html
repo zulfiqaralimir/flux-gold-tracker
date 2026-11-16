@@ -69,6 +69,9 @@
         .banner .btn { margin-left: 8px; }
 
         h2 { font-family: 'Orbitron', sans-serif; font-size: .95rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 28px 0 12px; }
+        .h2row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 14px; }
+        .h2row h2 { margin-right: auto; }
+        .h2row .btn { margin-bottom: 12px; }
         h2 small { font-family: 'Space Mono', monospace; letter-spacing: 0; text-transform: none; color: var(--muted); font-size: .72rem; margin-left: 8px; }
         .grid { display: grid; gap: 12px; }
         .grid > *, .panel, .card, .toolbar > * { min-width: 0; }
@@ -139,7 +142,10 @@
     </section>
     <div id="banner" class="banner" role="alert" aria-live="polite"></div>
 
-    <h2>International gold <small>converted to PKR at the USD/PKR market rate</small></h2>
+    <div class="h2row">
+        <h2>International gold <small>converted to PKR at the USD/PKR market rate</small></h2>
+        <button id="ratesCsvBtn" class="btn" type="button">Download rates (CSV)</button>
+    </div>
     <section class="grid cards" id="cards" aria-live="polite"></section>
 
     <h2>Market information</h2>
@@ -156,6 +162,10 @@
                 <button type="button" data-range="6M" aria-pressed="false">6M</button>
                 <button type="button" data-range="1Y" aria-pressed="false">1Y</button>
                 <button type="button" data-range="ALL" aria-pressed="false">ALL</button>
+            </div>
+            <div class="seg" role="group" aria-label="Chart type" id="typeSeg">
+                <button type="button" data-type="line" aria-pressed="true">Line</button>
+                <button type="button" data-type="candle" aria-pressed="false">Candles</button>
             </div>
             <div class="seg" role="group" aria-label="Currency view" id="curSeg">
                 <button type="button" data-cur="USD" aria-pressed="true">USD / oz</button>
@@ -215,7 +225,7 @@
 (function () {
     'use strict';
     const $ = (id) => document.getElementById(id);
-    const state = { quote: null, history: null, range: '1M', cur: 'USD', chart: null, demo: false };
+    const state = { quote: null, history: null, range: '1M', cur: 'USD', type: 'line', chart: null, demo: false };
     const API = '/api/pk-gold';
     let C; // PKGold calc module (loaded deferred)
 
@@ -305,35 +315,78 @@
     }
 
     // ---- chart ----
-    function chartValue(p) {
-        if (state.cur === 'USD') return p[1];
+    // Convert a USD value of point p into the selected view (USD, PKR/oz or PKR/tola 24K).
+    function conv(p, usdVal) {
+        if (usdVal == null) return null;
+        if (state.cur === 'USD') return usdVal;
         if (p[2] == null) return null;
-        return state.cur === 'PKR' ? p[2] : C.perTola24k(p[2]);
+        const pkrVal = usdVal * (p[2] / p[1]);
+        return state.cur === 'PKR' ? pkrVal : C.perTola24k(pkrVal);
     }
+    function pointOf(p) {
+        const c = conv(p, p[1]);
+        if (c == null) return null;
+        return { x: p[0], y: c, o: conv(p, p[3] == null ? p[1] : p[3]), h: conv(p, p[4] == null ? p[1] : p[4]), l: conv(p, p[5] == null ? p[1] : p[5]) };
+    }
+
+    // Draws OHLC candles over an invisible line dataset (which still drives hover/tooltips).
+    const candlePlugin = {
+        id: 'candles',
+        afterDatasetsDraw(chart) {
+            if (state.type !== 'candle') return;
+            const ds = chart.data.datasets[0];
+            const xs = chart.scales.x, ys = chart.scales.y, ctx = chart.ctx, area = chart.chartArea;
+            const n = ds.data.length; if (!n) return;
+            const w = Math.max(1, Math.min(16, (area.right - area.left) / n * 0.7));
+            ctx.save();
+            ctx.beginPath(); ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top); ctx.clip();
+            ds.data.forEach((d) => {
+                const x = xs.getPixelForValue(d.x), yo = ys.getPixelForValue(d.o), yc = ys.getPixelForValue(d.y),
+                      yh = ys.getPixelForValue(d.h), yl = ys.getPixelForValue(d.l);
+                const col = d.y >= d.o ? '#22C55E' : '#F43F5E';
+                ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(x, yh); ctx.lineTo(x, yl); ctx.stroke();
+                ctx.fillRect(x - w / 2, Math.min(yo, yc), w, Math.max(1, Math.abs(yc - yo)));
+            });
+            ctx.restore();
+        }
+    };
+
     function renderChart() {
         const h = state.history, msg = $('chartMsg');
         if (!h) return;
-        const pts = h.points.map((p) => ({ x: p[0], y: chartValue(p) })).filter((p) => p.y != null);
+        const pts = h.points.map(pointOf).filter(Boolean);
         if (state.chart) { state.chart.destroy(); state.chart = null; }
         if (!pts.length) { msg.style.display = 'flex'; msg.textContent = h.demo ? 'Demo mode shows no chart. Charts display real market data only.' : 'No history available for this range.'; $('chartNote').textContent = h.source || ''; return; }
         msg.style.display = 'none';
+        const candle = state.type === 'candle';
         const up = pts[pts.length - 1].y >= pts[0].y, col = up ? '#22C55E' : '#F43F5E';
         const unit = state.cur === 'USD' ? 'USD/oz' : state.cur === 'PKR' ? 'PKR/oz' : 'PKR/tola (24K)';
+        const dec = state.cur === 'USD' ? 2 : 0;
         const ctx = $('chart').getContext('2d');
         const grad = ctx.createLinearGradient(0, 0, 0, 380); grad.addColorStop(0, up ? 'rgba(34,197,94,.28)' : 'rgba(244,63,94,.28)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+        const yMin = candle ? Math.min.apply(null, pts.map((p) => p.l)) : undefined, yMax = candle ? Math.max.apply(null, pts.map((p) => p.h)) : undefined;
+        const pad = candle ? (yMax - yMin) * 0.05 : 0;
         state.chart = new Chart(ctx, {
             type: 'line',
-            data: { datasets: [{ label: unit, data: pts, borderColor: col, backgroundColor: grad, fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.15 }] },
+            plugins: [candlePlugin],
+            data: { datasets: [{ label: unit, data: pts, parsing: false, borderColor: candle ? 'transparent' : col, backgroundColor: candle ? 'transparent' : grad,
+                fill: !candle, borderWidth: candle ? 0 : 2, pointRadius: 0, pointHoverRadius: candle ? 0 : 5, tension: candle ? 0 : 0.15 }] },
             options: {
                 responsive: true, maintainAspectRatio: false, animation: { duration: 400 }, interaction: { mode: 'index', intersect: false },
                 plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0E1320', borderColor: '#FFD700', borderWidth: 1, titleColor: '#FFD700', bodyColor: '#F3F4F6',
-                    callbacks: { label: (c) => ' ' + fmt(c.parsed.y, state.cur === 'USD' ? 2 : 0) + ' ' + unit } } },
-                scales: { x: { type: 'time', grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#8B93A7', maxTicksLimit: 8 } },
-                    y: { grid: { color: 'rgba(255,255,255,.06)' }, ticks: { color: '#8B93A7', callback: (v) => fmt(v, state.cur === 'USD' ? 0 : 0) } } }
+                    callbacks: { label: (c) => {
+                        const d = c.raw;
+                        if (!candle) return ' ' + fmt(d.y, dec) + ' ' + unit;
+                        return [' Open  ' + fmt(d.o, dec), ' High  ' + fmt(d.h, dec), ' Low   ' + fmt(d.l, dec), ' Close ' + fmt(d.y, dec) + ' ' + unit];
+                    } } } },
+                scales: { x: { type: 'time', offset: candle, grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#8B93A7', maxTicksLimit: 8 } },
+                    y: { min: candle ? yMin - pad : undefined, max: candle ? yMax + pad : undefined, grid: { color: 'rgba(255,255,255,.06)' }, ticks: { color: '#8B93A7', callback: (v) => fmt(v, 0) } } }
             }
         });
-        $('chartNote').textContent = (h.source || '') + (h.stale ? ' (showing last cached data)' : '');
-        $('chart').setAttribute('aria-label', 'Gold price history chart, ' + state.range + ', ' + unit + ', from ' + fmt(pts[0].y, 0) + ' to ' + fmt(pts[pts.length - 1].y, 0));
+        const per = { '1D': '5-minute', '1W': '30-minute', '1M': 'daily', '3M': 'daily', '6M': 'daily', '1Y': 'daily', 'ALL': 'monthly' }[state.range];
+        $('chartNote').textContent = (h.source || '') + (candle ? ' Each candle = one ' + per + ' period; green = closed higher than it opened.' : '') + (h.stale ? ' (showing last cached data)' : '');
+        $('chart').setAttribute('aria-label', 'Gold ' + (candle ? 'candlestick' : 'line') + ' chart, ' + state.range + ', ' + unit + ', from ' + fmt(pts[0].y, 0) + ' to ' + fmt(pts[pts.length - 1].y, 0));
     }
 
     async function loadHistory() {
@@ -365,11 +418,36 @@
         } finally { $('refreshBtn').disabled = false; }
     }
 
+    function downloadRates() {
+        const q = state.quote, d = derived();
+        if (!q || !d) { alert('No rates loaded yet.'); return; }
+        const esc = (v) => '"' + String(v).replace(/"/g, '""') + '"';
+        const rows = [
+            ['Gold price converted to PKR: international spot-equivalent (NOT official Pakistan Sarafa rates)'],
+            ['Price time', new Date(q.gold.time).toISOString()],
+            ['Downloaded', new Date().toISOString()],
+            ['Gold source', q.gold.source + (q.gold.delayed ? ' (delayed)' : '')],
+            ['FX source', q.fx.source],
+            ['Gold USD per troy oz', q.gold.usdPerOz.toFixed(2)],
+            ['USD/PKR', q.fx.usdPkr.toFixed(4)],
+            ['Data type', q.demo ? 'DEMO SAMPLE, NOT MARKET DATA' : 'Market data'],
+            [],
+            ['Purity', 'PKR per gram', 'PKR per 10 grams', 'PKR per tola', 'PKR per troy oz']
+        ];
+        [24, 22, 21, 18].forEach((k) => rows.push([k + 'K', C.byKarat(d.g24, k).toFixed(2), C.byKarat(d.ten24, k).toFixed(0), C.byKarat(d.tola24, k).toFixed(0), C.byKarat(d.ozPkr, k).toFixed(0)]));
+        rows.push([], ['1 troy oz = 31.1034768 g; 1 tola = 11.6638038 g. Excludes making charges, taxes and dealer spread.']);
+        const text = rows.map((r) => r.map(esc).join(',')).join('\r\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob(['\ufeff' + text], { type: 'text/csv;charset=utf-8' }));
+        a.download = 'gold-rates-pkr-' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+    }
+
     function csv() {
         const h = state.history;
         if (!h || !h.points.length) { alert('No historical data to export for this view.'); return; }
-        const rows = ['timestamp_utc,gold_usd_per_oz,gold_pkr_per_oz,gold_24k_pkr_per_tola'];
-        h.points.forEach((p) => rows.push([new Date(p[0]).toISOString(), p[1].toFixed(2), p[2] == null ? '' : p[2].toFixed(0), p[2] == null ? '' : C.perTola24k(p[2]).toFixed(0)].join(',')));
+        const rows = ['timestamp_utc,open_usd,high_usd,low_usd,close_usd_per_oz,close_pkr_per_oz,close_24k_pkr_per_tola'];
+        h.points.forEach((p) => rows.push([new Date(p[0]).toISOString(), (p[3] == null ? p[1] : p[3]).toFixed(2), (p[4] == null ? p[1] : p[4]).toFixed(2), (p[5] == null ? p[1] : p[5]).toFixed(2), p[1].toFixed(2), p[2] == null ? '' : p[2].toFixed(0), p[2] == null ? '' : C.perTola24k(p[2]).toFixed(0)].join(',')));
         rows.push('# Source: ' + h.source);
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }));
@@ -388,11 +466,13 @@
         C = window.PKGold;
         try { const s = JSON.parse(localStorage.getItem('pkgold.local') || 'null'); if (s) { $('lKarat').value = s.k; $('lRate').value = s.v; } } catch (e) {}
         seg('rangeSeg', 'range', (v) => { state.range = v; loadHistory(); });
+        seg('typeSeg', 'type', (v) => { state.type = v; renderChart(); });
         seg('curSeg', 'cur', (v) => { state.cur = v; renderChart(); });
         ['cWeight', 'cUnit', 'cKarat'].forEach((id) => $(id).addEventListener('input', renderCalc));
         ['lKarat', 'lRate'].forEach((id) => $(id).addEventListener('input', renderLocal));
         $('refreshBtn').addEventListener('click', () => { loadQuote(); loadHistory(); });
         $('csvBtn').addEventListener('click', csv);
+        $('ratesCsvBtn').addEventListener('click', downloadRates);
         $('banner').addEventListener('click', (e) => {
             if (e.target.id === 'retryBtn') { state.demo = false; loadQuote(); loadHistory(); }
             if (e.target.id === 'demoBtn') { state.demo = true; loadQuote(); loadHistory(); }
