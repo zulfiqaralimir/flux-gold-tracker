@@ -94,6 +94,7 @@
         .toolbar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; margin-bottom: 12px; }
         .seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
         .seg button { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: .72rem; }
+        .seg .btn { padding: 7px 12px; font-size: .75rem; color: var(--text); }
         .seg button[aria-pressed="true"] { background: rgba(255,215,0,.12); color: var(--gold); border-color: var(--gold); }
         .chart-box { position: relative; height: 380px; }
         .chart-msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--muted); font-size: .8rem; }
@@ -144,7 +145,7 @@
 
     <div class="h2row">
         <h2>International gold <small>converted to PKR at the USD/PKR market rate</small></h2>
-        <button id="ratesCsvBtn" class="btn" type="button">Download rates (CSV)</button>
+        <div class="seg"><button id="ratesPngBtn" class="btn" type="button">Download rates (PNG)</button><button id="ratesCsvBtn" class="btn" type="button">Download rates (CSV)</button></div>
     </div>
     <section class="grid cards" id="cards" aria-live="polite"></section>
 
@@ -172,7 +173,7 @@
                 <button type="button" data-cur="PKR" aria-pressed="false">PKR / oz</button>
                 <button type="button" data-cur="TOLA" aria-pressed="false">PKR / tola (24K)</button>
             </div>
-            <button id="csvBtn" class="btn" type="button">Download CSV</button>
+            <div class="seg"><button id="pngBtn" class="btn" type="button">Download PNG</button><button id="csvBtn" class="btn" type="button">Download CSV</button></div>
         </div>
         <div class="chart-box">
             <canvas id="chart" role="img" aria-label="Gold price history chart"></canvas>
@@ -418,6 +419,96 @@
         } finally { $('refreshBtn').disabled = false; }
     }
 
+    // ---- PNG export (drawn on an off-screen canvas so the image has a proper dark background and labels) ----
+    function savePng(canvas, name) {
+        canvas.toBlob((blob) => {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = name;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+        }, 'image/png');
+    }
+    function wrapText(ctx, text, x, y, maxW, lh) {
+        const words = String(text).split(' '); let line = '';
+        words.forEach((w) => {
+            const t = line ? line + ' ' + w : w;
+            if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line, x, y); line = w; y += lh; } else line = t;
+        });
+        if (line) { ctx.fillText(line, x, y); y += lh; }
+        return y;
+    }
+    function frame(w, h) {
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        const g = ctx.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#0B1020'); g.addColorStop(1, '#070A12');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = '#B8860B'; ctx.lineWidth = 2; ctx.strokeRect(1, 1, w - 2, h - 2);
+        return { c, ctx };
+    }
+    const MONO = '"Space Mono", ui-monospace, Menlo, Consolas, monospace';
+    const HEAD = '"Orbitron", "Segoe UI", Arial, sans-serif';
+
+    function downloadChartPng() {
+        const q = state.quote;
+        if (!state.chart || !state.history || !state.history.points.length) { alert('No chart to export for this view.'); return; }
+        const src = state.chart.canvas, W = 1400, pad = 40, headH = 120, footH = 110;
+        const chartH = Math.round((src.height / src.width) * (W - pad * 2));
+        const { c, ctx } = frame(W, headH + chartH + footH);
+        ctx.fillStyle = '#FFD700'; ctx.font = '700 30px ' + HEAD; ctx.fillText('ZulfiQode FLUX | Gold Price Pakistan', pad, 55);
+        const unit = state.cur === 'USD' ? 'USD per troy oz' : state.cur === 'PKR' ? 'PKR per troy oz' : 'PKR per tola (24K)';
+        ctx.fillStyle = '#8B93A7'; ctx.font = '18px ' + MONO;
+        ctx.fillText((state.type === 'candle' ? 'Candlestick' : 'Line') + ' chart | ' + state.range + ' | ' + unit, pad, 92);
+        ctx.drawImage(src, pad, headH, W - pad * 2, chartH);
+        ctx.fillStyle = '#8B93A7'; ctx.font = '15px ' + MONO;
+        let y = headH + chartH + 28;
+        y = wrapText(ctx, (state.history.source || '') + (q && q.demo ? ' [DEMO]' : ''), pad, y, W - pad * 2, 22);
+        ctx.fillText('Generated ' + new Date().toLocaleString() + ' | flux-gold-tracker.vercel.app/pakistan-gold | Informational only, not financial advice.', pad, y + 4);
+        savePng(c, 'gold-chart-' + state.range + '-' + state.type + '.png');
+    }
+
+    function downloadRatesPng() {
+        const q = state.quote, d = derived();
+        if (!q || !d) { alert('No rates loaded yet.'); return; }
+        const W = 1200, H = 760, pad = 48;
+        const { c, ctx } = frame(W, H);
+        ctx.fillStyle = '#FFD700'; ctx.font = '700 32px ' + HEAD; ctx.fillText('Gold Price Pakistan', pad, 70);
+        ctx.fillStyle = '#8B93A7'; ctx.font = '17px ' + MONO;
+        ctx.fillText('International gold converted to PKR | spot-equivalent, not official Sarafa rates', pad, 104);
+        if (q.demo) { ctx.fillStyle = '#F43F5E'; ctx.font = '700 20px ' + MONO; ctx.fillText('DEMO SAMPLE: NOT MARKET DATA', pad, 136); }
+
+        const box = (x, y, w, label, val, big) => {
+            ctx.fillStyle = '#121A2B'; ctx.fillRect(x, y, w, 96);
+            ctx.strokeStyle = '#232C42'; ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + .5, w - 1, 95);
+            ctx.fillStyle = '#8B93A7'; ctx.font = '14px ' + MONO; ctx.fillText(label.toUpperCase(), x + 16, y + 30);
+            ctx.fillStyle = big ? '#FFD700' : '#F3F4F6'; ctx.font = '700 28px ' + HEAD; ctx.fillText(val, x + 16, y + 72);
+        };
+        const bw = (W - pad * 2 - 32) / 3;
+        box(pad, 156, bw, 'Gold / troy oz (USD)', '$' + fmt(d.usd), true);
+        box(pad + bw + 16, 156, bw, 'Gold / troy oz (PKR)', 'PKR ' + fmt(d.ozPkr, 0), false);
+        box(pad + (bw + 16) * 2, 156, bw, 'USD / PKR', fmt(d.fx, 4), false);
+
+        // table
+        const cols = ['Purity', 'Per gram', 'Per 10 grams', 'Per tola', 'Per troy oz'];
+        const xs = [pad + 16, pad + 330, pad + 560, pad + 800, pad + 1040];
+        let y = 306;
+        ctx.fillStyle = '#8B93A7'; ctx.font = '15px ' + MONO;
+        cols.forEach((t, i) => { ctx.textAlign = i ? 'right' : 'left'; ctx.fillText(t.toUpperCase(), xs[i], y); });
+        ctx.strokeStyle = '#232C42'; ctx.beginPath(); ctx.moveTo(pad, y + 14); ctx.lineTo(W - pad, y + 14); ctx.stroke();
+        [24, 22, 21, 18].forEach((k) => {
+            y += 56;
+            const vals = [k + 'K', 'PKR ' + fmt(C.byKarat(d.g24, k), 0), 'PKR ' + fmt(C.byKarat(d.ten24, k), 0), 'PKR ' + fmt(C.byKarat(d.tola24, k), 0), 'PKR ' + fmt(C.byKarat(d.ozPkr, k), 0)];
+            ctx.font = '700 22px ' + MONO;
+            vals.forEach((t, i) => { ctx.textAlign = i ? 'right' : 'left'; ctx.fillStyle = (i === 3 || i === 0) ? '#FFD700' : '#F3F4F6'; ctx.fillText(t, xs[i], y); });
+            ctx.strokeStyle = '#1b243a'; ctx.beginPath(); ctx.moveTo(pad, y + 18); ctx.lineTo(W - pad, y + 18); ctx.stroke();
+        });
+        ctx.textAlign = 'left'; ctx.fillStyle = '#8B93A7'; ctx.font = '14px ' + MONO;
+        y += 56;
+        y = wrapText(ctx, 'Price time: ' + new Date(q.gold.time).toLocaleString() + (q.gold.delayed ? ' (delayed)' : '') + ' | Source: ' + q.gold.source + ' | FX: ' + q.fx.source, pad, y, W - pad * 2, 21);
+        y = wrapText(ctx, '1 troy oz = 31.1034768 g; 1 tola = 11.6638038 g. Excludes making charges, taxes and dealer spread. Informational only, not financial advice.', pad, y + 2, W - pad * 2, 21);
+        ctx.fillText('flux-gold-tracker.vercel.app/pakistan-gold', pad, H - 22);
+        savePng(c, 'gold-rates-pkr-' + new Date().toISOString().slice(0, 10) + '.png');
+    }
+
     function downloadRates() {
         const q = state.quote, d = derived();
         if (!q || !d) { alert('No rates loaded yet.'); return; }
@@ -473,6 +564,8 @@
         $('refreshBtn').addEventListener('click', () => { loadQuote(); loadHistory(); });
         $('csvBtn').addEventListener('click', csv);
         $('ratesCsvBtn').addEventListener('click', downloadRates);
+        $('pngBtn').addEventListener('click', downloadChartPng);
+        $('ratesPngBtn').addEventListener('click', downloadRatesPng);
         $('banner').addEventListener('click', (e) => {
             if (e.target.id === 'retryBtn') { state.demo = false; loadQuote(); loadHistory(); }
             if (e.target.id === 'demoBtn') { state.demo = true; loadQuote(); loadHistory(); }
